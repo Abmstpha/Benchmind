@@ -5,11 +5,20 @@
   **Environment-First AI Model Selection Platform**
 </div>
 
-Transform your AI model selection process with intelligent, data-driven recommendations that consider quality, performance, cost, and environmental impact.
+**The first AI governance layer that helps teams choose the right model — not just for accuracy, but for the planet.**
+
+Transform your AI model selection process with intelligent, data-driven recommendations that consider quality, performance, cost, and environmental impact. Aligned with French "IA frugale" specifications and ADEME carbon evaluation standards.
 
 ## 🎯 Overview
 
 Benchmind is a comprehensive AI model evaluation platform that helps developers, data scientists, and engineering teams make informed decisions about which AI models to use for their specific applications. Our intelligent consultant analyzes your requirements and provides strategic recommendations based on real benchmarking data.
+
+### 🧪 **Technical Credibility**
+- **Real API Measurements** - Actual Mistral API calls, not simulated metrics
+- **Scientific Methodology** - EcoLogits energy computation (ISO 14044 standard)
+- **Live Performance Tracking** - Real-time latency, cost, and quality measurement
+- **Pareto-Optimal Recommendations** - NSGA-II inspired multi-objective optimization
+- **Regulatory Alignment** - AFNOR Spec 2314 (Frugal AI Framework) compliance
 
 ### Core Value Proposition
 
@@ -327,16 +336,25 @@ Benchmind emphasizes environmental responsibility:
 - [ ] **Team Features** - Collaboration and sharing
 - [ ] **API Rate Limiting** - Production-grade controls
 
-## 🤝 Contributing
+## 🚀 **Product Vision**
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+**"Benchmind becomes the API layer enterprises use before deploying any AI model — think of it as Datadog for Responsible AI."**
+
+### **Future Roadmap:**
+- **Green SLA Monitoring** - Continuous environmental compliance tracking
+- **Enterprise Dashboards** - Organization-wide AI governance
+- **Benchmind API** - Programmatic model selection service
+- **Partner Integrations** - Mistral, IONOS, ADEME, Beta.gouv collaborations
+
+### **Market Opportunity:**
+- **Problem**: 99% of teams don't know the energy cost of their AI API calls
+- **Solution**: First-to-market AI governance layer with environmental focus
+- **Impact**: Enable responsible AI deployment at enterprise scale
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-MIT License - See LICENSE file for details
-
-
