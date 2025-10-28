@@ -98,6 +98,10 @@ cp .env.example .env
 # MISTRAL_API_KEY=your_mistral_key
 # GEMINI_API_KEY=your_gemini_key
 
+# Get your API keys from:
+# Mistral API: https://console.mistral.ai/
+# Google Gemini API: https://aistudio.google.com/app/apikey
+
 # Start the server (choose one)
 python -m app.main                    # Direct Python execution
 # OR
