@@ -67,34 +67,6 @@ def get_model_name(model_id: str) -> str:
     return name_mapping.get(model_id, model_id.replace('-', ' ').title())
 
 
-def assess_universal_quality(response: str, user_task: str, complexity: str) -> float:
-    """Universal quality assessment that works for any task type."""
-    score = 0.5  # Base score
-    
-    word_count = len(response.split())
-    
-    # Length appropriateness based on complexity
-    if complexity == "simple" and 20 <= word_count <= 150:
-        score += 0.2
-    elif complexity == "medium" and 50 <= word_count <= 300:
-        score += 0.2
-    elif complexity == "complex" and word_count >= 150:
-        score += 0.2
-    
-    # Structure and completeness
-    structure_indicators = [".", ":", "-", "1.", "2.", "•", "However", "Additionally"]
-    structure_count = sum(1 for indicator in structure_indicators if indicator in response)
-    if structure_count >= 3:
-        score += 0.2
-    
-    # Task relevance (basic keyword matching)
-    task_words = user_task.lower().split()
-    relevant_words = [word for word in task_words if len(word) > 3]
-    relevance_count = sum(1 for word in relevant_words if word in response.lower())
-    if relevance_count >= 2:
-        score += 0.1
-    
-    return min(score, 1.0)
 
 
 def call_mistral_api(model_id: str, prompt: str, max_tokens: int, api_key: str) -> Dict[str, Any]:

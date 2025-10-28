@@ -5,7 +5,7 @@ Tools for Benchmind AI Consultant ReAct Agent
 import json
 import time
 from langchain_core.tools import tool
-from ..utils.utils import call_mistral_api, calculate_cost, calculate_environmental_impact, get_model_name, assess_universal_quality
+from ..utils.utils import call_mistral_api, calculate_cost, calculate_environmental_impact, get_model_name
 from ..core.config import settings
 
 
@@ -64,13 +64,11 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             cost_usd = calculate_cost(actual_tokens, model_id)
             energy_wh, co2_g = calculate_environmental_impact(actual_tokens, model_id)
             
-            # Assess quality based on response
+            # Get response text for token counting
             response_text = response['choices'][0]['message']['content']
-            quality_score = assess_universal_quality(response_text, user_task, complexity)
             
             results.append({
                 "model": get_model_name(model_id),
-                "quality": quality_score,
                 "latency_ms": latency_ms,
                 "cost_usd": cost_usd,
                 "energy_wh": energy_wh,

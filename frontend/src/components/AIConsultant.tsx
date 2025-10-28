@@ -6,18 +6,55 @@ import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
 
+// Format markdown text
+const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
+  const formatText = (text: string) => {
+    return text
+      // *italic* to <em> (process before bold, avoid matching inside bold)
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+      // **bold** to <strong>
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // bullet points
+      .replace(/^\* (.+)$/gm, '<li>$1</li>')
+      // wrap consecutive <li> in <ul>
+      .replace(/((?:<li>.*?<\/li>\s*){2,})/gs, '<ul>$1</ul>')
+      // markdown tables
+      .replace(/\|(.+)\|/g, (_, content) => {
+        const cells = content.split('|').map((cell: string) => cell.trim());
+        if (cells.some((cell: string) => cell.includes('---'))) {
+          return ''; // Skip separator rows
+        }
+        const cellTags = cells.map((cell: string) => `<td>${cell}</td>`).join('');
+        return `<tr>${cellTags}</tr>`;
+      })
+      // wrap table rows
+      .replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="benchmark-table">$&</table>')
+      // line breaks
+      .replace(/\n/g, '<br>')
+      // clean spaces (collapse only spaces and tabs, not newlines)
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+  };
+
+  return (
+    <div 
+      className="formatted-recommendation"
+      dangerouslySetInnerHTML={{ __html: formatText(text) }}
+    />
+  );
+};
+
 interface AIConsultantProps {
   // Add props as needed
 }
 
 interface BenchmarkResult {
   model: string;
-  quality: number;
   latency_ms: number;
   cost_usd: number;
   energy_wh: number;
   co2_g: number;
-  recommendations_found: number;
+  tokens_used: number;
 }
 
 interface AIRecommendation {
@@ -295,8 +332,8 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           </h4>
           
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-              {formatRecommendation(recommendation)}
+            <div className="text-gray-800 leading-relaxed prose prose-sm max-w-none">
+              <FormattedRecommendation text={formatRecommendation(recommendation)} />
             </div>
           </div>
 

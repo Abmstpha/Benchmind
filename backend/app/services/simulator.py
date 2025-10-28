@@ -6,11 +6,10 @@ import time
 from typing import Dict, Any
 from dataclasses import dataclass
 
-from utils import (
+from ..utils.utils import (
     calculate_cost, 
     calculate_environmental_impact, 
     get_model_name, 
-    assess_universal_quality,
     call_mistral_api
 )
 
@@ -21,7 +20,6 @@ class TaskSimulationResult:
     model_id: str
     model_name: str
     task_description: str
-    simulated_quality: float  # 0-1 score
     actual_latency_ms: float
     actual_cost_usd: float
     actual_energy_wh: float
@@ -63,15 +61,13 @@ class TaskSimulator:
         cost_usd = calculate_cost(actual_tokens, model_id)
         energy_wh, co2_g = calculate_environmental_impact(actual_tokens, model_id)
         
-        # Assess quality based on response
+        # Get response text for analysis
         response_text = response['choices'][0]['message']['content']
-        quality_score = assess_universal_quality(response_text, user_task, complexity)
         
         return TaskSimulationResult(
             model_id=model_id,
             model_name=get_model_name(model_id),
             task_description=f"{user_task} ({complexity} complexity)",
-            simulated_quality=quality_score,
             actual_latency_ms=latency_ms,
             actual_cost_usd=cost_usd,
             actual_energy_wh=energy_wh,
