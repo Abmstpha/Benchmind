@@ -62,9 +62,10 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, general_exception_handler)
     
     # Include routers
-    from .routers import models, consultant
+    from .routers import models, consultant, test_ecologits
     app.include_router(models.router)
     app.include_router(consultant.router)
+    app.include_router(test_ecologits.router)
     
     # Root endpoint
     @app.get("/")
@@ -77,6 +78,8 @@ def create_app() -> FastAPI:
             "endpoints": {
                 "models": "/models",
                 "ai_consultant": "/ai-consultant",
+                "test_ecologits_get": "/test/ecologits-simple",
+                "test_ecologits_post": "/test/ecologits",
                 "docs": "/docs",
                 "health": "/health"
             }

@@ -8,9 +8,8 @@ from dataclasses import dataclass
 
 from ..utils.utils import (
     calculate_cost, 
-    calculate_environmental_impact, 
     get_model_name, 
-    call_mistral_api
+    call_mistral_api_with_ecologits
 )
 
 
@@ -47,19 +46,25 @@ class TaskSimulator:
         
         total_expected_tokens = int(prompt_tokens + expected_response_tokens)
         
-        # Execute the actual API call
+        # Execute the actual API call with REAL EcoLogits tracking
         start_time = time.time()
-        response = call_mistral_api(model_id, test_prompt, expected_response_tokens, self.mistral_api_key)
-        end_time = time.time()
+        try:
+            response, energy_wh, co2_g = call_mistral_api_with_ecologits(
+                model_id, test_prompt, expected_response_tokens, self.mistral_api_key
+            )
+            end_time = time.time()
+        except Exception as e:
+            raise Exception(f"Task simulation failed for {model_id}: {str(e)}")
         
         # Calculate real metrics
         latency_ms = (end_time - start_time) * 1000
         usage = response.get('usage', {})
         actual_tokens = usage.get('total_tokens', total_expected_tokens)
         
-        # Calculate real costs and environmental impact based on ACTUAL token usage
+        # Calculate cost based on ACTUAL token usage
         cost_usd = calculate_cost(actual_tokens, model_id)
-        energy_wh, co2_g = calculate_environmental_impact(actual_tokens, model_id)
+        
+        # Environmental impact already calculated by REAL EcoLogits (energy_wh, co2_g)
         
         # Get response text for analysis
         response_text = response['choices'][0]['message']['content']
