@@ -1,125 +1,223 @@
 # Benchmind
 
-**AI Model Evaluation Platform with Intelligent Consultant**
+**AI Model Evaluation Platform with Green AI Observability**
 
-Benchmind is an AI consultant that helps you choose the best AI model for your specific tasks. Instead of just comparing models, it uses a ReAct agent to understand your needs, run realistic simulations, and provide intelligent recommendations based on quality, latency, cost, and environmental impact.
+Transform your AI model selection process with intelligent, data-driven recommendations that consider quality, performance, cost, and environmental impact.
 
-## 🧠 How It Works
+## 🎯 Overview
 
-1. **Describe your task**: "I need a recommendation system for movies"
-2. **AI agent analyzes**: Uses Gemini to understand your requirements  
-3. **Runs real simulations**: Tests models on tasks similar to yours
-4. **Provides recommendations**: With detailed reasoning and trade-off analysis
+Benchmind is a comprehensive AI model evaluation platform that helps developers, data scientists, and engineering teams make informed decisions about which AI models to use for their specific applications. Our intelligent consultant analyzes your requirements and provides strategic recommendations based on real benchmarking data.
 
-## ✨ Features
+### Core Value Proposition
 
-- 🤖 **AI Consultant**: LangGraph ReAct agent with Gemini reasoning
-- 🎯 **Task Simulation**: Tests models on realistic scenarios
-- 🌱 **Green AI Focus**: Environmental impact measurement
-- ⚡ **Real Benchmarks**: Actual API calls with latency/cost tracking
-- 📊 **Professional UI**: Clean, enterprise-grade interface
-- 🔬 **Scientific Foundation**: Based on peer-reviewed research
+Evaluate and select AI models across **4 key dimensions**:
+
+1. **🎯 Quality/Accuracy** - Performance on your specific tasks
+2. **⚡ Latency/Speed** - Response time and real-time performance  
+3. **💰 Cost Efficiency** - Token pricing and operational expenses
+4. **🌱 Environmental Impact** - Energy consumption and carbon footprint
+
+## ✨ Key Features
+
+- **🤖 AI Consultant** - Intelligent ReAct agent that understands your use case and creates custom benchmarks
+- **📊 Real-time Benchmarking** - Live performance testing with actual API calls to AI models
+- **🌍 Green AI Dashboard** - Visualize performance vs energy vs CO₂ trade-offs
+- **📈 Interactive Charts** - Multi-dimensional analysis with beautiful data visualizations
+- **💡 Strategic Recommendations** - Data-driven insights with detailed reasoning
+- **🏢 Enterprise Ready** - Production-grade architecture with proper logging and error handling
+
+## 🏗️ Architecture
+
+### Modern FastAPI Backend
+```
+backend/
+├── app/                          # Main application package
+│   ├── main.py                  # App factory with lifespan management
+│   ├── core/                    # Core system configuration
+│   │   ├── config.py           # Pydantic settings with environment variables
+│   │   ├── logging.py          # Structured logging setup
+│   │   └── exceptions.py       # Custom exceptions & error handlers
+│   ├── routers/                 # API endpoints (thin layer)
+│   │   ├── models.py           # /models - Model registry endpoints
+│   │   └── consultant.py       # /ai-consultant - Intelligent recommendations
+│   ├── schemas/                 # Pydantic request/response models
+│   │   ├── requests.py         # Input validation schemas
+│   │   └── responses.py        # Output response schemas
+│   ├── services/                # Business logic (clean separation)
+│   │   ├── model_registry.py   # Model management & metadata
+│   │   ├── consultant_agent.py # ReAct agent service
+│   │   └── simulator.py        # Task simulation logic
+│   ├── agents/                  # AI agents & tools
+│   │   ├── agent.py            # LangChain ReAct agent creation
+│   │   └── tools.py            # LangChain tools for benchmarking
+│   └── utils/                   # Utility functions
+│       └── utils.py            # Cost calculation, environmental impact
+├── .env.example                 # Environment variables template
+└── requirements.txt             # Python dependencies
+```
+
+### React Frontend
+```
+frontend/
+├── src/
+│   ├── components/             # React components
+│   │   ├── AIConsultant.tsx   # Main consultant interface
+│   │   └── BenchmarkCharts.tsx # Data visualization
+│   ├── api/                   # API client
+│   └── pages/                 # Next.js pages
+├── package.json               # Node.js dependencies
+└── next.config.js            # Next.js configuration
+```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- API Keys: Mistral AI, Google Gemini
+- **Python 3.8+** with pip
+- **Node.js 18+** with npm
+- **API Keys**: Mistral AI, Google Gemini
 
-### Setup
+### 1. Backend Setup
 
-1. **Clone and setup environment**:
 ```bash
-git clone git@github.com:Abmstpha/Benchmind.git
-cd Benchmind
-python -m venv benchenv
-source benchenv/bin/activate  # On Windows: benchenv\Scripts\activate
-```
-
-2. **Install dependencies**:
-```bash
-# Backend
+# Navigate to backend
 cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Frontend
-cd ../frontend
-npm install
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys:
+# MISTRAL_API_KEY=your_mistral_key
+# GEMINI_API_KEY=your_gemini_key
+
+# Start the server
+python -m app.main
 ```
 
-3. **Configure API keys** in `backend/.env`:
-```bash
-MISTRAL_API_KEY=your_mistral_key_here
-GEMINI_API_KEY=your_gemini_key_here
-```
+Backend available at: `http://localhost:8000`
 
-4. **Start the services**:
-```bash
-# Terminal 1 - Backend
-cd backend
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+### 2. Frontend Setup
 
-# Terminal 2 - Frontend  
+```bash
+# Navigate to frontend
 cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-5. **Open**: http://localhost:3000
+Frontend available at: `http://localhost:3000`
 
-## 🎯 Example Usage
+## 🎮 How to Use
 
-**User**: "I need a recommendation system for movies"
+1. **📝 Describe Your Task**
+   - "I want to build a recommendation system for my e-commerce platform"
+   - "I need a content generation system for marketing copy"
+   - "I'm creating a customer support chatbot"
 
-**AI Consultant**:
-1. Analyzes your task using Gemini
-2. Runs recommendation simulations on Mistral models
-3. Tests with realistic movie recommendation prompts
-4. Measures quality, latency, cost, and CO₂ emissions
-5. Provides detailed recommendation with reasoning
+2. **🎯 Select Models to Compare**
+   - Choose from 60+ available AI models
+   - Mix different model sizes and capabilities
 
-## 🏗️ Architecture
+3. **🤖 Get AI Recommendations**
+   - Our ReAct agent analyzes your requirements
+   - Creates custom test prompts for your use case
+   - Benchmarks models with real API calls
 
+4. **📊 Review Results**
+   - Interactive charts showing performance trade-offs
+   - Detailed cost and environmental impact analysis
+   - Strategic recommendations with reasoning
+
+## 🔧 API Endpoints
+
+### Core Endpoints
+- `GET /` - API information and health
+- `GET /models` - Available AI models registry
+- `POST /ai-consultant` - Intelligent model recommendations
+- `GET /health` - System health check
+
+### Example Request
+```json
+{
+  "task_description": "I want to build a recommendation system for my e-commerce platform",
+  "user_context": "Budget constraints, need fast response times",
+  "selected_models": ["mistral-large-latest", "mistral-small", "mistral-tiny"]
+}
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React UI      │    │   FastAPI        │    │   AI Models     │
-│   (Port 3000)   │◄──►│   (Port 8000)    │◄──►│   (Mistral API) │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌──────────────────┐
-                       │   LangGraph      │
-                       │   ReAct Agent    │
-                       │   (Gemini Brain) │
-                       └──────────────────┘
-```
+
+## 🧠 AI Consultant Intelligence
+
+Our ReAct agent powered by Google Gemini:
+
+1. **🔍 Analyzes** your task description and requirements
+2. **💭 Reasons** about the best approach for testing
+3. **🛠️ Creates** custom test prompts that simulate real usage
+4. **⚡ Executes** benchmarks with actual API calls
+5. **📈 Measures** quality, latency, cost, and environmental impact
+6. **🎯 Recommends** optimal models with detailed explanations
+
+## 🌱 Green AI Focus
+
+Benchmind emphasizes environmental responsibility:
+
+- **📊 CO₂ Emissions** - Calculate carbon footprint per model
+- **⚡ Energy Consumption** - Track power usage in Wh
+- **🌍 Environmental Impact** - Compare green alternatives
+- **📈 Sustainability Metrics** - Make eco-conscious decisions
+
+## 🏢 Production Ready
+
+- **⚙️ Structured Configuration** - Pydantic settings with environment variables
+- **📝 Comprehensive Logging** - Structured logging for observability
+- **🛡️ Error Handling** - Custom exceptions with proper HTTP responses
+- **🔒 Security** - API key management and validation
+- **📦 Dependency Injection** - Clean FastAPI patterns
+- **🧪 Testable Architecture** - Separated business logic
 
 ## 🛠️ Tech Stack
 
-- **Backend**: FastAPI, LangGraph, LangChain
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **AI**: Gemini (reasoning), Mistral (testing)
-- **Agent**: LangGraph ReAct pattern
+### Backend
+- **FastAPI** - Modern, fast web framework
+- **LangChain** - AI agent framework
+- **Pydantic** - Data validation and settings
+- **Google Gemini** - Reasoning brain for AI consultant
+- **Mistral AI** - Model provider for benchmarking
 
-## 📊 What Makes It Different
+### Frontend  
+- **Next.js** - React framework for production
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first styling
+- **Recharts** - Data visualization library
 
-Unlike simple model comparison tools, Benchmind:
+## 📈 Development Roadmap
 
-- **Understands context**: AI agent analyzes your specific needs
-- **Runs real tests**: Simulates your actual use case
-- **Provides reasoning**: Explains why one model is better
-- **Considers environment**: Green AI is a first-class metric
-- **Enterprise ready**: Professional, clean interface
+- [x] **Core Platform** - AI consultant with real benchmarking
+- [x] **Green AI Metrics** - Environmental impact calculation
+- [x] **Production Architecture** - Professional FastAPI structure
+- [ ] **Database Integration** - Persistent storage for results
+- [ ] **Advanced Visualizations** - Pareto frontier analysis
+- [ ] **Multi-provider Support** - OpenAI, Anthropic integration
+- [ ] **Team Features** - Collaboration and sharing
+- [ ] **API Rate Limiting** - Production-grade controls
 
-## 🌱 Environmental Impact
+## 🤝 Contributing
 
-Based on peer-reviewed research:
-- Strubell et al. (2019) - Energy methodology
-- Schwartz et al. (2020) - "Green AI"
-- Henderson et al. (2020) - Energy policy
-- Lacoste et al. (2021) - CodeCarbon
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## 📝 License
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 MIT License - See LICENSE file for details
 

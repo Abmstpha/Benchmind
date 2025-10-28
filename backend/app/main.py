@@ -1,0 +1,110 @@
+"""
+Benchmind FastAPI Application
+AI Model Evaluation Platform with Green AI Observability
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from .core.config import settings
+from .core.logging import setup_logging, get_logger
+from .core.exceptions import (
+    BenchmindException,
+    benchmind_exception_handler,
+    http_exception_handler,
+    general_exception_handler
+)
+
+
+# Setup logging
+setup_logging()
+logger = get_logger("main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events."""
+    # Startup
+    logger.info("🚀 Starting Benchmind API...")
+    logger.info(f"Environment: {'Development' if settings.debug else 'Production'}")
+    logger.info(f"API Keys configured: Mistral={bool(settings.mistral_api_key)}, Gemini={bool(settings.gemini_api_key)}")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 Shutting down Benchmind API...")
+
+
+def create_app() -> FastAPI:
+    """Application factory."""
+    
+    app = FastAPI(
+        title=settings.app_name,
+        description=settings.app_description,
+        version=settings.app_version,
+        debug=settings.debug,
+        lifespan=lifespan
+    )
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Add exception handlers
+    app.add_exception_handler(BenchmindException, benchmind_exception_handler)
+    app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(Exception, general_exception_handler)
+    
+    # Include routers
+    from .routers import models, consultant
+    app.include_router(models.router)
+    app.include_router(consultant.router)
+    
+    # Root endpoint
+    @app.get("/")
+    async def root():
+        """Root endpoint with API information."""
+        return {
+            "message": settings.app_name,
+            "version": settings.app_version,
+            "status": "running",
+            "endpoints": {
+                "models": "/models",
+                "ai_consultant": "/ai-consultant",
+                "docs": "/docs",
+                "health": "/health"
+            }
+        }
+    
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint."""
+        return {
+            "status": "healthy",
+            "version": settings.app_version,
+            "mistral_api_configured": bool(settings.mistral_api_key),
+            "gemini_api_configured": bool(settings.gemini_api_key)
+        }
+    
+    return app
+
+
+# Create the app instance
+app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+        log_level=settings.log_level.lower()
+    )

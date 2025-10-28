@@ -41,16 +41,20 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
+  const [renderKey, setRenderKey] = useState(Date.now());
   const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const exampleTasks = [
-    "I need a recommendation system for movies",
-    "Build a content generation system for blog posts",
-    "Create a customer support chatbot",
-    "Develop a code documentation generator",
-    "Build a sentiment analysis tool for social media"
+    "I need to build a recommendation system for my e-commerce platform",
+    "I want to create a content generation system for marketing copy",
+    "I'm building a customer support chatbot for my SaaS product",
+    "I need to develop an automated code review and documentation system",
+    "I want to build a sentiment analysis pipeline for social media monitoring",
+    "I'm creating a document summarization tool for legal contracts",
+    "I need to build a multilingual translation API for my global app",
+    "I want to create an AI-powered search and Q&A system for my knowledge base"
   ];
 
   // Fetch available models on component mount
@@ -63,6 +67,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         console.log('✅ Frontend models received:', models);
         console.log('📊 Frontend available models count:', models.available_models?.length);
         setAvailableModels(models.available_models || []);
+        setRenderKey(Date.now()); // Force re-render to break cache
       } catch (err: any) {
         console.error('❌ Frontend failed to fetch models:', err);
         console.error('Frontend error details:', err.response?.data || err.message);
@@ -106,9 +111,34 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
 
   const formatRecommendation = (rec: AIRecommendation) => {
     if (!rec.ai_recommendation.success) {
-      return rec.ai_recommendation.fallback_recommendation || rec.ai_recommendation.error;
+      const fallback = rec.ai_recommendation.fallback_recommendation || rec.ai_recommendation.error;
+      return typeof fallback === 'string' ? fallback : JSON.stringify(fallback);
     }
-    return rec.ai_recommendation.recommendation;
+    
+    let recommendation = rec.ai_recommendation.recommendation;
+    
+    // Handle complex object responses
+    if (typeof recommendation === 'object' && recommendation !== null) {
+      // Check if it's an array of objects with text content
+      if (Array.isArray(recommendation)) {
+        return (recommendation as any[]).map((item: any) => {
+          if (typeof item === 'object' && item.text) {
+            return item.text;
+          }
+          return typeof item === 'string' ? item : JSON.stringify(item);
+        }).join('\n\n');
+      }
+      
+      // Check if it's a single object with text content
+      if ((recommendation as any).text) {
+        return (recommendation as any).text;
+      }
+      
+      // Fallback to JSON stringify
+      return JSON.stringify(recommendation, null, 2);
+    }
+    
+    return typeof recommendation === 'string' ? recommendation : JSON.stringify(recommendation);
   };
 
   return (
@@ -176,9 +206,9 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Models to Compare ({selectedModels.length}/3) - {modelsLoading ? 'Loading...' : `${availableModels.length} models available`}
         </label>
-        <div className="space-y-2">
+        <div className="space-y-2" key={renderKey}>
           {[0, 1, 2].map((index) => (
-            <div key={index} className="flex items-center space-x-2">
+            <div key={`dropdown-container-${index}-${renderKey}`} className="flex items-center space-x-2">
               <span className="text-sm text-gray-500 w-12">#{index + 1}</span>
               <select
                 value={selectedModels[index] || ''}
@@ -201,8 +231,8 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
                 <option value="">Select a model...</option>
                 {availableModels
                   .filter(model => !selectedModels.includes(model.id) || selectedModels[index] === model.id)
-                  .map(model => (
-                    <option key={model.id} value={model.id}>
+                  .map((model, modelIndex) => (
+                    <option key={`dropdown-${index}-model-${modelIndex}-${model.id}`} value={model.id}>
                       {model.name} - {model.description}
                     </option>
                   ))

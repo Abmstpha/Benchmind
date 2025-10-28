@@ -18,8 +18,7 @@ import {
   PolarRadiusAxis,
   Radar,
   ScatterChart,
-  Scatter,
-  Cell
+  Scatter
 } from 'recharts';
 
 interface BenchmarkResult {
@@ -63,8 +62,8 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     };
   });
 
-  // Color scheme for models
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  // Color scheme for models (keeping for future use)
+  // const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   return (
     <div className="space-y-8">
@@ -95,11 +94,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               ]}
               labelFormatter={(label) => `Model: ${label}`}
             />
-            <Scatter name="Models" data={chartData} fill="#3B82F6">
-              {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-              ))}
-            </Scatter>
+            <Scatter name="Models" data={chartData} fill="#3B82F6" />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -112,17 +107,38 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <PolarGrid />
             <PolarAngleAxis dataKey="model" />
             <PolarRadiusAxis domain={[0, 100]} tickCount={5} />
-            {results.map((_, index) => (
-              <Radar
-                key={index}
-                name={radarData[index]?.model}
-                dataKey="Quality"
-                stroke={colors[index % colors.length]}
-                fill={colors[index % colors.length]}
-                fillOpacity={0.1}
-                strokeWidth={2}
-              />
-            ))}
+            <Radar
+              name="Quality"
+              dataKey="Quality"
+              stroke="#3B82F6"
+              fill="#3B82F6"
+              fillOpacity={0.1}
+              strokeWidth={2}
+            />
+            <Radar
+              name="Speed"
+              dataKey="Speed"
+              stroke="#10B981"
+              fill="#10B981"
+              fillOpacity={0.1}
+              strokeWidth={2}
+            />
+            <Radar
+              name="Cost Efficiency"
+              dataKey="Cost Efficiency"
+              stroke="#F59E0B"
+              fill="#F59E0B"
+              fillOpacity={0.1}
+              strokeWidth={2}
+            />
+            <Radar
+              name="Green Score"
+              dataKey="Green Score"
+              stroke="#EF4444"
+              fill="#EF4444"
+              fillOpacity={0.1}
+              strokeWidth={2}
+            />
             <Tooltip />
             <Legend />
           </RadarChart>
