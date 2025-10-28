@@ -28,6 +28,7 @@ frontend/out/
 frontend/dist/
 frontend/.env.local
 frontend/.env.production.local
+frontend/.vite/
 
 # IDE & Editors
 .vscode/
