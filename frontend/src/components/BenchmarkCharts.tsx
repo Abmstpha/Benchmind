@@ -28,7 +28,8 @@ interface BenchmarkResult {
   cost_usd: number;
   energy_wh: number;
   co2_g: number;
-  recommendations_found: number;
+  tokens_used?: number;
+  test_prompt?: string;
 }
 
 interface BenchmarkChartsProps {
@@ -44,7 +45,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     cost: result.cost_usd * 1000000, // Convert to micro-dollars for better display
     co2: Math.round(result.co2_g * 100) / 100,
     energy: Math.round(result.energy_wh * 100) / 100,
-    recommendations: result.recommendations_found
+    tokens: result.tokens_used || 0
   }));
 
   // Radar chart data (normalized to 0-100 scale)

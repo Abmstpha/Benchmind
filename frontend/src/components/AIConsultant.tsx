@@ -21,16 +21,13 @@ interface BenchmarkResult {
 }
 
 interface AIRecommendation {
+  success: boolean;
   task: string;
-  user_context?: string;
-  ai_recommendation: {
-    success: boolean;
-    recommendation?: string;
-    reasoning_steps?: any[];
-    error?: string;
-    fallback_recommendation?: string;
-    benchmark_results?: BenchmarkResult[];
-  };
+  recommendation?: string;
+  reasoning_steps?: any[];
+  error?: string;
+  fallback_recommendation?: string;
+  benchmark_results?: BenchmarkResult[];
   timestamp: string;
   consultant_version: string;
 }
@@ -110,12 +107,12 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   };
 
   const formatRecommendation = (rec: AIRecommendation) => {
-    if (!rec.ai_recommendation.success) {
-      const fallback = rec.ai_recommendation.fallback_recommendation || rec.ai_recommendation.error;
+    if (!rec.success) {
+      const fallback = rec.fallback_recommendation || rec.error;
       return typeof fallback === 'string' ? fallback : JSON.stringify(fallback);
     }
     
-    let recommendation = rec.ai_recommendation.recommendation;
+    let recommendation = rec.recommendation;
     
     // Handle complex object responses
     if (typeof recommendation === 'object' && recommendation !== null) {
@@ -304,36 +301,33 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           </div>
 
           {/* Visual Charts */}
-          {recommendation.ai_recommendation.benchmark_results && (
+          {recommendation.benchmark_results && (
             <div className="mt-6">
               <h5 className="text-lg font-medium text-gray-900 mb-4">
                 📊 Visual Performance Analysis
               </h5>
-              <BenchmarkCharts results={recommendation.ai_recommendation.benchmark_results} />
+              <BenchmarkCharts results={recommendation.benchmark_results} />
             </div>
           )}
 
           {/* Task Summary */}
           <div className="mt-4 text-sm text-gray-600">
             <div><strong>Task:</strong> {recommendation.task}</div>
-            {recommendation.user_context && (
-              <div><strong>Context:</strong> {recommendation.user_context}</div>
-            )}
             <div><strong>Generated:</strong> {new Date(recommendation.timestamp).toLocaleString()}</div>
             <div><strong>Status:</strong> 
-              <span className={`ml-1 ${recommendation.ai_recommendation.success ? 'text-green-600' : 'text-yellow-600'}`}>
-                {recommendation.ai_recommendation.success ? 'AI Analysis Complete' : 'Fallback Recommendation'}
+              <span className={`ml-1 ${recommendation.success ? 'text-green-600' : 'text-yellow-600'}`}>
+                {recommendation.success ? 'AI Analysis Complete' : 'Fallback Recommendation'}
               </span>
             </div>
           </div>
 
           {/* Reasoning Steps (if available) */}
-          {recommendation.ai_recommendation.reasoning_steps && recommendation.ai_recommendation.reasoning_steps.length > 0 && (
+          {recommendation.reasoning_steps && recommendation.reasoning_steps.length > 0 && (
             <div className="mt-4">
               <h5 className="text-sm font-medium text-gray-700 mb-2">🧠 AI Reasoning Process:</h5>
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm">
                 <pre className="whitespace-pre-wrap text-gray-600">
-                  {JSON.stringify(recommendation.ai_recommendation.reasoning_steps, null, 2)}
+                  {JSON.stringify(recommendation.reasoning_steps, null, 2)}
                 </pre>
               </div>
             </div>
