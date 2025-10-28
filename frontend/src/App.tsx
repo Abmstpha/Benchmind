@@ -1,4 +1,3 @@
-import React from 'react'
 import ProfessionalLayout from './components/ProfessionalLayout'
 import './styles/modern.css'
 
