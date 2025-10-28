@@ -1,5 +1,5 @@
 """
-AI Consultant router - DIRECT ReAct Agent (NO WRAPPER BULLSHIT)
+AI Consultant router - Direct ReAct Agent implementation without service wrapper layer.
 """
 
 import logging
