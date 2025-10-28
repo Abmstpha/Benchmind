@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Benchmind - AI Model Evaluation Platform with Green AI Observability" />
+    <meta property="og:title" content="Benchmind" />
+    <meta property="og:description" content="Professional AI model evaluation platform measuring quality, latency, cost, and environmental impact" />
+    <meta property="og:type" content="website" />
+    <title>Benchmind</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Clean up old ComparIA URLs and redirect to root
+      if (window.location.pathname.includes('ComparIA-dashboard') || 
+          window.location.hash.includes('ComparIA-dashboard') ||
+          window.location.href.includes('ComparIA-dashboard')) {
+        
+        // Clear any stored state that might cause redirects
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Force redirect to clean root URL
+        window.location.replace(window.location.origin + '/');
+      }
+    </script>
+  </body>
+</html>
