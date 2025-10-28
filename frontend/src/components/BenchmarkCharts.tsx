@@ -128,7 +128,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
                 key={entry.name}
                 name={entry.name}
                 data={[entry]} 
-                fill={index === 0 ? "#3B82F6" : index === 1 ? "#10B981" : "#8B5CF6"} 
+                fill={index === 0 ? "#10B981" : index === 1 ? "#059669" : "#047857"} 
               />
             ))}
           </ScatterChart>
@@ -185,7 +185,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               <XAxis dataKey="name" />
               <YAxis domain={[0, 'dataMax + 50']} />
               <Tooltip formatter={(value) => [`${value} tokens`, 'Response Length']} />
-              <Bar dataKey="tokens" fill="#10B981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="tokens" fill="#059669" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -213,7 +213,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip formatter={(value) => [`$${(Number(value)/1000000).toFixed(6)}`, 'Cost per inference']} />
-              <Bar dataKey="cost" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="cost" fill="#10B981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -232,8 +232,8 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
                   name === 'co2' ? 'CO₂ Emissions' : 'Energy Usage'
                 ]}
               />
-              <Bar dataKey="co2" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="energy" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="co2" fill="#DC2626" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="energy" fill="#059669" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -277,8 +277,8 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             );
           })}
         </div>
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="mt-4 p-3 bg-green-50 rounded-lg">
+          <p className="text-sm text-green-800">
             <strong>💡 EcoLogits Methodology:</strong> Real environmental impact data measured using ISO 14044 standards. 
             Energy consumption and CO₂ emissions are calculated based on actual model inference and data center efficiency.
           </p>

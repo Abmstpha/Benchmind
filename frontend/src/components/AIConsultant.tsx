@@ -297,7 +297,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
           isLoading || !taskDescription.trim() || selectedModels.length === 0
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
+            : 'bg-green-600 text-white hover:bg-green-700'
         }`}
       >
         {isLoading ? (
@@ -331,7 +331,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
             🎯 AI Recommendation
           </h4>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="text-gray-800 leading-relaxed prose prose-sm max-w-none">
               <FormattedRecommendation text={formatRecommendation(recommendation)} />
             </div>
@@ -359,8 +359,8 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
             <div><strong>Task:</strong> {recommendation.task}</div>
             <div><strong>Generated:</strong> {new Date(recommendation.timestamp).toLocaleString()}</div>
             <div><strong>Status:</strong> 
-              <span className={`ml-1 ${recommendation.success ? 'text-green-600' : 'text-yellow-600'}`}>
-                {recommendation.success ? 'AI Analysis Complete' : 'Fallback Recommendation'}
+              <span className={`ml-1 ${recommendation.success ? 'text-green-700' : 'text-yellow-600'}`}>
+                {recommendation.success ? '🌱 AI Analysis Complete' : 'Fallback Recommendation'}
               </span>
             </div>
           </div>

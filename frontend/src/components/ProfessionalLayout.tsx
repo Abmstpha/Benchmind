@@ -23,7 +23,7 @@ export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-gradient-to-r from-green-600 to-green-700 border-b border-green-800 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <img 
@@ -32,16 +32,16 @@ export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
               className="w-10 h-10 rounded-lg shadow-sm"
             />
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Benchmind</h1>
-              <p className="text-sm text-gray-500">Environment-First AI Model Selection</p>
+              <h1 className="text-xl font-bold text-white">🌱 Benchmind</h1>
+              <span className="text-sm text-green-100">AI Model Benchmarking & Environmental Impact</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-green-100">
               {new Date().toLocaleDateString()}
             </span>
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Online</span>
+            <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+            <span className="text-sm text-green-100">Online</span>
           </div>
         </div>
       </header>
@@ -51,7 +51,7 @@ export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
         <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
           <nav className="p-4">
             <div className="space-y-2">
-              <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md">
+              <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-md">
                 <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
