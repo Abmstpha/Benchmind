@@ -31,29 +31,29 @@ Evaluate and select AI models across **4 key dimensions**:
 ### Modern FastAPI Backend
 ```
 backend/
-├── app/                          # Main application package
-│   ├── main.py                  # App factory with lifespan management
-│   ├── core/                    # Core system configuration
-│   │   ├── config.py           # Pydantic settings with environment variables
-│   │   ├── logging.py          # Structured logging setup
-│   │   └── exceptions.py       # Custom exceptions & error handlers
-│   ├── routers/                 # API endpoints (thin layer)
-│   │   ├── models.py           # /models - Model registry endpoints
-│   │   └── consultant.py       # /ai-consultant - Intelligent recommendations
-│   ├── schemas/                 # Pydantic request/response models
-│   │   ├── requests.py         # Input validation schemas
-│   │   └── responses.py        # Output response schemas
-│   ├── services/                # Business logic (clean separation)
-│   │   ├── model_registry.py   # Model management & metadata
-│   │   ├── consultant_agent.py # ReAct agent service
-│   │   └── simulator.py        # Task simulation logic
-│   ├── agents/                  # AI agents & tools
-│   │   ├── agent.py            # LangChain ReAct agent creation
-│   │   └── tools.py            # LangChain tools for benchmarking
-│   └── utils/                   # Utility functions
-│       └── utils.py            # Cost calculation, environmental impact
-├── .env.example                 # Environment variables template
-└── requirements.txt             # Python dependencies
+├── app/                          # 🎯 Main application package
+│   ├── main.py                  # 🚀 App factory with lifespan management
+│   ├── core/                    # ⚙️ Core system configuration
+│   │   ├── config.py           # 🔧 Pydantic settings with environment variables
+│   │   ├── logging.py          # 📝 Structured logging setup
+│   │   └── exceptions.py       # 🛡️ Custom exceptions & error handlers
+│   ├── routers/                 # 🌐 API endpoints (thin layer)
+│   │   ├── models.py           # 📊 GET /models - 60+ AI models registry
+│   │   └── consultant.py       # 🤖 POST /ai-consultant - Intelligent recommendations
+│   ├── schemas/                 # 📋 Pydantic request/response models
+│   │   ├── requests.py         # ✅ Input validation schemas
+│   │   └── responses.py        # 📤 Output response schemas
+│   ├── services/                # 💼 Business logic (clean separation)
+│   │   ├── model_registry.py   # 🗂️ Mistral API integration & model metadata
+│   │   ├── consultant_agent.py # 🧠 ReAct agent service with error handling
+│   │   └── simulator.py        # 🎮 Task simulation logic
+│   ├── agents/                  # 🤖 AI agents & tools
+│   │   ├── agent.py            # 🔗 LangChain ReAct agent with Gemini
+│   │   └── tools.py            # 🛠️ Real benchmarking tools with API calls
+│   └── utils/                   # 🔧 Utility functions
+│       └── utils.py            # 💰 Cost calculation, 🌱 environmental impact
+├── .env.example                 # 📝 Environment variables template
+└── requirements.txt             # 📦 Python dependencies
 ```
 
 ### React Frontend
@@ -95,11 +95,15 @@ cp .env.example .env
 # MISTRAL_API_KEY=your_mistral_key
 # GEMINI_API_KEY=your_gemini_key
 
-# Start the server
-python -m app.main
+# Start the server (choose one)
+python -m app.main                    # Direct Python execution
+# OR
+uvicorn app.main:app --reload         # Using uvicorn with auto-reload
 ```
 
 Backend available at: `http://localhost:8000`
+
+**API Documentation:** `http://localhost:8000/docs` (FastAPI auto-generated)
 
 ### 2. Frontend Setup
 
@@ -119,23 +123,107 @@ Frontend available at: `http://localhost:3000`
 ## 🎮 How to Use
 
 1. **📝 Describe Your Task**
-   - "I want to build a recommendation system for my e-commerce platform"
-   - "I need a content generation system for marketing copy"
-   - "I'm creating a customer support chatbot"
+   - "I'm creating a document summarization tool for legal contracts"
+   - "I want to build a customer support chatbot for my SaaS product"
+   - "I need an AI-powered search and Q&A system for my knowledge base"
 
-2. **🎯 Select Models to Compare**
-   - Choose from 60+ available AI models
-   - Mix different model sizes and capabilities
+2. **🎯 Select Models to Compare** (Optional)
+   - Choose from 60+ available models: `mistral-tiny`, `mistral-small`, `open-mistral-nemo`, etc.
+   - Leave empty to let the agent choose optimal models for your task
 
 3. **🤖 Get AI Recommendations**
-   - Our ReAct agent analyzes your requirements
-   - Creates custom test prompts for your use case
-   - Benchmarks models with real API calls
+   - ReAct agent analyzes your requirements and creates custom test prompts
+   - **Real benchmarking** with actual Mistral API calls
+   - **Intelligent analysis** of quality, speed, cost, and environmental impact
 
 4. **📊 Review Results**
-   - Interactive charts showing performance trade-offs
-   - Detailed cost and environmental impact analysis
-   - Strategic recommendations with reasoning
+   - **Multi-dimensional charts**: Radar plots, bar charts, performance tables
+   - **Strategic recommendations**: "For legal documents, Open Mistral Nemo offers 90% quality..."
+   - **Trade-off analysis**: Cost vs quality vs environmental impact
+   - **Reasoning transparency**: See exactly how the agent made its decisions
+
+## 🔄 Intelligent Workflow
+
+```mermaid
+graph TD
+    A[👤 User Input] --> B[🤖 AI Consultant Agent]
+    B --> C[💭 Task Analysis & Reasoning]
+    C --> D[🎯 Custom Test Prompt Creation]
+    D --> E[🛠️ Benchmarking Tool]
+    E --> F[🌐 Real API Calls]
+    F --> G[📊 Performance Metrics]
+    G --> H[🧠 Intelligent Analysis]
+    H --> I[📈 Visual Charts]
+    H --> J[💡 Strategic Recommendation]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#fff3e0
+    style D fill:#e8f5e8
+    style E fill:#fff8e1
+    style F fill:#fce4ec
+    style G fill:#e0f2f1
+    style H fill:#f1f8e9
+    style I fill:#e3f2fd
+    style J fill:#fff9c4
+```
+
+### 🎯 **Step-by-Step Breakdown:**
+
+#### 1. **👤 User Input**
+```
+"I'm creating a document summarization tool for legal contracts"
++ Selected models: ["mistral-small", "mistral-tiny", "open-mistral-nemo"]
+```
+
+#### 2. **🤖 AI Consultant Agent (Gemini-Powered ReAct)**
+- **Reasoning**: *"Legal documents require high accuracy. I need to test summarization capabilities with a complex legal clause..."*
+- **Action Planning**: *"I'll create an NDA clause test and benchmark the selected models"*
+
+#### 3. **💭 Task Analysis & Custom Prompt Creation**
+```
+Generated Test Prompt:
+"Summarize the following clause from a Non-Disclosure Agreement: 
+'Recipient acknowledges that the Confidential Information is proprietary...'"
+```
+
+#### 4. **🛠️ Real Benchmarking Tool Execution**
+```python
+# For each model:
+- mistral-small  → API Call → Response + Metrics
+- mistral-tiny   → API Call → Response + Metrics  
+- open-mistral-nemo → API Call → Response + Metrics
+```
+
+#### 5. **📊 Performance Metrics Collection**
+```json
+{
+  "model": "Open Mistral Nemo",
+  "quality": 0.9,           // ✅ Accuracy assessment
+  "latency_ms": 742.58,     // ⚡ Speed measurement
+  "cost_usd": 0.000416,     // 💰 Real cost calculation
+  "energy_wh": 0.312,       // 🌱 Environmental impact
+  "co2_g": 0.0936,          // 🌍 Carbon footprint
+  "tokens_used": 208        // 📝 Token efficiency
+}
+```
+
+#### 6. **🧠 Intelligent Analysis & Recommendation**
+```
+Agent Reasoning:
+"For legal contract summarization, quality and accuracy are paramount. 
+Open Mistral Nemo stands out with 90% quality, fastest response time (743ms), 
+and superior accuracy for legal documents. While it costs more ($0.000416 vs $0.0000615), 
+the enhanced accuracy justifies the cost for legal use cases..."
+```
+
+#### 7. **📈 Visual Dashboard**
+- **🕸️ Multi-dimensional radar chart** - Performance overview
+- **📊 Quality comparison bars** - Model accuracy ranking  
+- **⚡ Latency comparison** - Speed analysis
+- **💰 Cost efficiency** - Budget optimization
+- **🌱 Environmental impact** - Green AI metrics
+- **📋 Performance summary table** - Complete data overview
 
 ## 🔧 API Endpoints
 
@@ -148,9 +236,32 @@ Frontend available at: `http://localhost:3000`
 ### Example Request
 ```json
 {
-  "task_description": "I want to build a recommendation system for my e-commerce platform",
-  "user_context": "Budget constraints, need fast response times",
-  "selected_models": ["mistral-large-latest", "mistral-small", "mistral-tiny"]
+  "task_description": "I'm creating a document summarization tool for legal contracts",
+  "user_context": "Need high accuracy for legal documents, cost is secondary",
+  "selected_models": ["mistral-small", "mistral-tiny", "open-mistral-nemo"]
+}
+```
+
+### Example Response
+```json
+{
+  "success": true,
+  "task": "I'm creating a document summarization tool for legal contracts",
+  "recommendation": "For your legal contract summarization tool, **Open Mistral Nemo** is the optimal choice with 90% quality, 743ms latency, and superior accuracy for legal documents...",
+  "benchmark_results": [
+    {
+      "model": "Open Mistral Nemo",
+      "quality": 0.9,
+      "latency_ms": 742.58,
+      "cost_usd": 0.000416,
+      "energy_wh": 0.312,
+      "co2_g": 0.0936,
+      "tokens_used": 208
+    }
+  ],
+  "reasoning_steps": [...],
+  "timestamp": "2024-10-28T15:42:56Z",
+  "consultant_version": "1.0"
 }
 ```
 
