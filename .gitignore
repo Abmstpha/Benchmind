@@ -55,6 +55,9 @@ htmlcov/
 # Project-specific test files
 check_gemini_models.py
 test_dynamic_fetch.py
+test_ecologits_real.py
+test_ecologits_simple.py
+test_flow.py
 
 # Jupyter
 .ipynb_checkpoints/
