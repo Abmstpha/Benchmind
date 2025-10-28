@@ -1,5 +1,5 @@
 """
-Benchmind AI Consultant - Pure ReAct Agent Creation (NO WRAPPER BULLSHIT)
+Benchmind AI Consultant - Pure ReAct Agent Creation without abstraction layers
 """
 
 from langchain_google_genai import ChatGoogleGenerativeAI
