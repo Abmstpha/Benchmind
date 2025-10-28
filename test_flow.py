@@ -4,7 +4,8 @@ Quick flow test to verify all imports and connections work
 """
 
 import sys
-sys.path.append('/Users/abdu07/Desktop/PROJECTS/Benchmind/backend')
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 
 def test_imports():
     """Test all critical imports work."""
