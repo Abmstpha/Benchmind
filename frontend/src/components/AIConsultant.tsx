@@ -31,8 +31,8 @@ const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
       .replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="benchmark-table">$&</table>')
       // line breaks
       .replace(/\n/g, '<br>')
-      // clean spaces
-      .replace(/\s+/g, ' ')
+      // clean spaces (collapse only spaces and tabs, not newlines)
+      .replace(/[ \t]+/g, ' ')
       .trim();
   };
 
