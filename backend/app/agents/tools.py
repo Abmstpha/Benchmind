@@ -5,7 +5,7 @@ Tools for Benchmind AI Consultant ReAct Agent
 import json
 import time
 from langchain_core.tools import tool
-from ..utils.utils import call_mistral_api, calculate_cost, calculate_environmental_impact, get_model_name
+from ..utils.utils import call_mistral_api_with_ecologits, calculate_cost, calculate_environmental_impact, get_model_name
 from ..core.config import settings
 
 
@@ -45,14 +45,16 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             
             total_expected_tokens = int(prompt_tokens + expected_response_tokens)
             
-            # Execute the actual API call
+            # Execute the actual API call with EcoLogits environmental tracking
             start_time = time.time()
             try:
-                response = call_mistral_api(model_id, test_prompt, expected_response_tokens, settings.mistral_api_key)
+                response, energy_wh, co2_g = call_mistral_api_with_ecologits(
+                    model_id, test_prompt, expected_response_tokens, settings.mistral_api_key
+                )
                 end_time = time.time()
             except Exception as e:
                 # Skip invalid models and continue with others
-                print(f"⚠️ Skipping model {model_id}: {e}")
+                print(f"⚠️ Skipping model {model_id}: {str(e)}")
                 continue
             
             # Calculate real metrics
@@ -60,9 +62,10 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             usage = response.get('usage', {})
             actual_tokens = usage.get('total_tokens', total_expected_tokens)
             
-            # Calculate real costs and environmental impact based on ACTUAL token usage
+            # Calculate cost based on ACTUAL token usage
             cost_usd = calculate_cost(actual_tokens, model_id)
-            energy_wh, co2_g = calculate_environmental_impact(actual_tokens, model_id)
+            
+            # Environmental impact already calculated by EcoLogits (energy_wh, co2_g from function return)
             
             # Get response text for token counting
             response_text = response['choices'][0]['message']['content']
