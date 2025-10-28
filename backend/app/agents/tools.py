@@ -3,10 +3,10 @@ Tools for Benchmind AI Consultant ReAct Agent
 """
 
 import json
-import os
+import time
 from langchain_core.tools import tool
 from ..utils.utils import call_mistral_api, calculate_cost, calculate_environmental_impact, get_model_name, assess_universal_quality
-import time
+from ..core.config import settings
 
 
 @tool
@@ -47,7 +47,7 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             
             # Execute the actual API call
             start_time = time.time()
-            response = call_mistral_api(model_id, test_prompt, expected_response_tokens, os.getenv("MISTRAL_API_KEY", ""))
+            response = call_mistral_api(model_id, test_prompt, expected_response_tokens, settings.mistral_api_key)
             end_time = time.time()
             
             # Calculate real metrics

@@ -2,22 +2,26 @@
 Benchmind AI Consultant - ReAct Agent Creation
 """
 
-import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
 from langgraph.graph.state import CompiledStateGraph
 
 from .tools import benchmark_models_for_task, analyze_cost_efficiency
+from ..core.config import settings
 
 
 def create_consultant_agent(model_name: str) -> CompiledStateGraph:
     """Create ReAct agent with LangGraph for Benchmind AI Consultant."""
     
     # Initialize LLM
+    api_key = settings.gemini_api_key
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found in environment variables")
+    
     llm = ChatGoogleGenerativeAI(
         model=model_name,
-        google_api_key=os.getenv("GEMINI_API_KEY", ""),
+        google_api_key=api_key,
         temperature=0.1
     )
     

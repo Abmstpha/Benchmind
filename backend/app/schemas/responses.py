@@ -26,7 +26,7 @@ class AIConsultantResponse(BaseModel):
     consultant_version: str = Field(..., description="Version of the consultant agent")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "success": True,
                 "task": "I want to build a recommendation system",

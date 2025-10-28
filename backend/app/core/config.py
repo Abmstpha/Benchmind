@@ -4,7 +4,10 @@ Core configuration for Benchmind API
 
 import os
 from typing import List
-from pydantic import BaseSettings
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -34,7 +37,6 @@ class Settings(BaseSettings):
     
     # Model Configuration
     default_gemini_model: str = "models/gemini-2.5-flash"
-    default_models: List[str] = ["mistral-large-latest", "mistral-tiny", "mistral-small"]
     
     # Logging Configuration
     log_level: str = "INFO"
@@ -43,6 +45,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # Ignore extra fields in .env
 
 
 # Global settings instance

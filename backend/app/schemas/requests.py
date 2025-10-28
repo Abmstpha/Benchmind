@@ -11,15 +11,15 @@ class AIConsultantRequest(BaseModel):
     task_description: str = Field(..., description="Description of the AI task to be solved")
     user_context: Optional[str] = Field(None, description="Additional context about user requirements")
     selected_models: List[str] = Field(
-        default=["mistral-large-latest", "mistral-tiny", "mistral-small"],
-        description="List of model IDs to compare"
+        default=[],
+        description="List of model IDs to compare (will use available models if empty)"
     )
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "task_description": "I want to build a recommendation system for my e-commerce platform",
                 "user_context": "Budget constraints, need fast response times",
-                "selected_models": ["mistral-large-latest", "mistral-small", "mistral-tiny"]
+                "selected_models": ["model-1", "model-2", "model-3"]
             }
         }

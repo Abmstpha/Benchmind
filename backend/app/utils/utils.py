@@ -3,6 +3,7 @@ Utility functions for Benchmind AI Consultant
 """
 
 import time
+import requests
 from typing import Dict, Any
 
 
