@@ -10,10 +10,10 @@ import { BenchmarkCharts } from './BenchmarkCharts';
 const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
   const formatText = (text: string) => {
     return text
+      // *italic* to <em> (process before bold, avoid matching inside bold)
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
       // **bold** to <strong>
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      // *italic* to <em>
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
       // bullet points
       .replace(/^\* (.+)$/gm, '<li>$1</li>')
       // wrap <li> in <ul>
