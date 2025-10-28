@@ -4,9 +4,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
+import { BenchmarkCharts } from './BenchmarkCharts';
 
 interface AIConsultantProps {
   // Add props as needed
+}
+
+interface BenchmarkResult {
+  model: string;
+  quality: number;
+  latency_ms: number;
+  cost_usd: number;
+  energy_wh: number;
+  co2_g: number;
+  recommendations_found: number;
 }
 
 interface AIRecommendation {
@@ -18,6 +29,7 @@ interface AIRecommendation {
     reasoning_steps?: any[];
     error?: string;
     fallback_recommendation?: string;
+    benchmark_results?: BenchmarkResult[];
   };
   timestamp: string;
   consultant_version: string;
@@ -260,6 +272,16 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
               {formatRecommendation(recommendation)}
             </div>
           </div>
+
+          {/* Visual Charts */}
+          {recommendation.ai_recommendation.benchmark_results && (
+            <div className="mt-6">
+              <h5 className="text-lg font-medium text-gray-900 mb-4">
+                📊 Visual Performance Analysis
+              </h5>
+              <BenchmarkCharts results={recommendation.ai_recommendation.benchmark_results} />
+            </div>
+          )}
 
           {/* Task Summary */}
           <div className="mt-4 text-sm text-gray-600">
