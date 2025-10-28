@@ -8,7 +8,8 @@ import sys
 import time
 
 # Add backend to path
-sys.path.append('/Users/abdu07/Desktop/PROJECTS/Benchmind/backend')
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend'))
+sys.path.append(backend_path)
 
 def test_ecologits_simple():
     """Simple test with proper environment setup."""
