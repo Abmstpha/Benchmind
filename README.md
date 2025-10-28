@@ -2,7 +2,7 @@
   <img src="frontend/public/assets/logo.png" alt="Benchmind Logo" width="200" height="200">
   
   # 🎯 Benchmind
-  **AI Model Selection Engine with Green-AI Observability**
+  **Environment-First AI Model Selection Platform**
 </div>
 
 Transform your AI model selection process with intelligent, data-driven recommendations that consider quality, performance, cost, and environmental impact.
