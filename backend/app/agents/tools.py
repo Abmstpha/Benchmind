@@ -47,8 +47,13 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             
             # Execute the actual API call
             start_time = time.time()
-            response = call_mistral_api(model_id, test_prompt, expected_response_tokens, settings.mistral_api_key)
-            end_time = time.time()
+            try:
+                response = call_mistral_api(model_id, test_prompt, expected_response_tokens, settings.mistral_api_key)
+                end_time = time.time()
+            except Exception as e:
+                # Skip invalid models and continue with others
+                print(f"⚠️ Skipping model {model_id}: {e}")
+                continue
             
             # Calculate real metrics
             latency_ms = (end_time - start_time) * 1000
@@ -73,6 +78,9 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
                 "tokens_used": actual_tokens,
                 "test_prompt": test_prompt[:100] + "..." if len(test_prompt) > 100 else test_prompt
             })
+        
+        if not results:
+            return json.dumps({"error": "No valid models found. Please check model names and try again."})
         
         return json.dumps(results)
         

@@ -52,7 +52,19 @@ class ConsultantAgent(LoggerMixin):
             messages = result.get("messages", [])
             if messages:
                 final_message = messages[-1]
-                recommendation = final_message.content if hasattr(final_message, 'content') else str(final_message)
+                raw_content = final_message.content if hasattr(final_message, 'content') else str(final_message)
+                
+                # Handle complex response formats (LangChain sometimes returns objects)
+                if isinstance(raw_content, list) and len(raw_content) > 0:
+                    # Extract text from complex object format
+                    if isinstance(raw_content[0], dict) and 'text' in raw_content[0]:
+                        recommendation = raw_content[0]['text']
+                    else:
+                        recommendation = str(raw_content[0])
+                elif isinstance(raw_content, dict) and 'text' in raw_content:
+                    recommendation = raw_content['text']
+                else:
+                    recommendation = str(raw_content)
             else:
                 recommendation = "No response generated"
             

@@ -118,4 +118,13 @@ def call_mistral_api(model_id: str, prompt: str, max_tokens: int, api_key: str) 
         timeout=30
     )
     
-    return response.json()
+    if response.status_code != 200:
+        raise Exception(f"Mistral API error {response.status_code}: {response.text}")
+    
+    result = response.json()
+    
+    # Validate response format
+    if 'choices' not in result:
+        raise Exception(f"Invalid API response format. Got: {list(result.keys())}")
+    
+    return result
