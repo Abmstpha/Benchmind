@@ -262,3 +262,32 @@
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
 }
+
+/* Formatted Recommendation Styles */
+.formatted-recommendation {
+  line-height: 1.7;
+}
+
+.formatted-recommendation strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.formatted-recommendation em {
+  font-style: italic;
+  color: #4b5563;
+}
+
+.formatted-recommendation ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.formatted-recommendation li {
+  margin: 0.25rem 0;
+  list-style-type: disc;
+}
+
+.formatted-recommendation br {
+  margin: 0.25rem 0;
+}

@@ -6,6 +6,33 @@ import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
 
+// Format markdown text
+const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
+  const formatText = (text: string) => {
+    return text
+      // **bold** to <strong>
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // *italic* to <em>
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      // bullet points
+      .replace(/^\* (.+)$/gm, '<li>$1</li>')
+      // wrap <li> in <ul>
+      .replace(/(<li>.*<\/li>\s*)+/gs, '<ul>$&</ul>')
+      // line breaks
+      .replace(/\n/g, '<br>')
+      // clean spaces
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  return (
+    <div 
+      className="formatted-recommendation"
+      dangerouslySetInnerHTML={{ __html: formatText(text) }}
+    />
+  );
+};
+
 interface AIConsultantProps {
   // Add props as needed
 }
@@ -295,8 +322,8 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           </h4>
           
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-              {formatRecommendation(recommendation)}
+            <div className="text-gray-800 leading-relaxed prose prose-sm max-w-none">
+              <FormattedRecommendation text={formatRecommendation(recommendation)} />
             </div>
           </div>
 
