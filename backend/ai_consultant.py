@@ -386,63 +386,42 @@ class BenchmindAIConsultant:
         return analyze_cost_efficiency
     
     def get_available_models(self) -> Dict[str, Any]:
-        """Get list of available models dynamically from Mistral API."""
+        """Get available models - EXACT COPY of working test script."""
         import requests
         
         try:
-            # Fetch models from Mistral API
             headers = {
                 "Authorization": f"Bearer {self.mistral_api_key}",
                 "Content-Type": "application/json"
             }
             
+            print("🌐 AI Consultant fetching models from Mistral API...")
             response = requests.get(
                 "https://api.mistral.ai/v1/models",
                 headers=headers,
                 timeout=10
             )
             
+            print(f"📊 AI Consultant response status: {response.status_code}")
+            
             if response.status_code == 200:
                 data = response.json()
-                api_models = data.get('data', [])
+                models = data.get('data', [])
                 
-                # Filter to chat-compatible models and add descriptions
+                print(f"📋 AI Consultant got {len(models)} total models from API")
+                
                 working_models = []
-                
-                for model in api_models:
+                for model in models:
                     model_id = model.get('id')
                     if not model_id:
                         continue
                     
-                    # Skip non-chat models (embed, moderation, etc.)
-                    if any(skip_word in model_id.lower() for skip_word in ['embed', 'moderation', 'ocr', 'transcribe']):
+                    # Skip ONLY embed/moderation models - EXACT SAME LOGIC
+                    if any(skip in model_id.lower() for skip in ['embed', 'moderation']):
                         continue
                     
-                    # Generate human-readable name and description
                     name = model_id.replace('-', ' ').title()
-                    
-                    # Add description based on model type
                     description = "AI model"
-                    if "tiny" in model_id.lower():
-                        description = "Fast and efficient"
-                    elif "small" in model_id.lower():
-                        description = "Balanced performance"
-                    elif "medium" in model_id.lower():
-                        description = "High quality"
-                    elif "large" in model_id.lower():
-                        description = "Best quality"
-                    elif "open" in model_id.lower():
-                        description = "Open source model"
-                    elif "mixtral" in model_id.lower():
-                        description = "Mixture of experts"
-                    elif "latest" in model_id.lower():
-                        description = "Latest version"
-                    elif "codestral" in model_id.lower():
-                        description = "Code generation"
-                    elif "voxtral" in model_id.lower():
-                        description = "Voice/audio model"
-                    elif "magistral" in model_id.lower():
-                        description = "Specialized model"
                     
                     working_models.append({
                         "id": model_id,
@@ -451,24 +430,26 @@ class BenchmindAIConsultant:
                         "description": description
                     })
                 
+                print(f"✅ AI Consultant returning {len(working_models)} models")
                 return {
                     "available_models": working_models,
                     "total_count": len(working_models),
                     "providers": ["mistral"]
                 }
+            else:
+                print(f"❌ AI Consultant API returned {response.status_code}: {response.text}")
             
         except Exception as e:
-            print(f"Error fetching models: {e}")
+            print(f"❌ AI Consultant error: {e}")
         
-        # Fallback to minimal working set if API fails
-        fallback_models = [
-            {"id": "mistral-tiny", "name": "Mistral Tiny", "provider": "mistral", "description": "Fast and efficient"},
-            {"id": "mistral-small", "name": "Mistral Small", "provider": "mistral", "description": "Balanced performance"}
-        ]
-        
+        # Fallback
+        print("🔄 AI Consultant using fallback models")
         return {
-            "available_models": fallback_models,
-            "total_count": len(fallback_models),
+            "available_models": [
+                {"id": "mistral-tiny", "name": "Mistral Tiny", "provider": "mistral", "description": "Fast"},
+                {"id": "mistral-small", "name": "Mistral Small", "provider": "mistral", "description": "Balanced"}
+            ],
+            "total_count": 2,
             "providers": ["mistral"]
         }
     

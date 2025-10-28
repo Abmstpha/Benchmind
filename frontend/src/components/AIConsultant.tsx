@@ -28,6 +28,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   const [userContext, setUserContext] = useState('');
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,20 +45,23 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        console.log('🔄 Fetching models from API...');
+        setModelsLoading(true);
+        console.log('🔄 Frontend fetching models from API...');
         const models = await benchmindApi.getModels();
-        console.log('✅ Models received:', models);
-        console.log('📊 Available models count:', models.available_models?.length);
+        console.log('✅ Frontend models received:', models);
+        console.log('📊 Frontend available models count:', models.available_models?.length);
         setAvailableModels(models.available_models || []);
       } catch (err: any) {
-        console.error('❌ Failed to fetch models:', err);
-        console.error('Error details:', err.response?.data || err.message);
+        console.error('❌ Frontend failed to fetch models:', err);
+        console.error('Frontend error details:', err.response?.data || err.message);
         // Fallback to default models
-        console.log('🔄 Using fallback models');
+        console.log('🔄 Frontend using fallback models');
         setAvailableModels([
           { id: 'mistral-tiny', name: 'Mistral Tiny', description: 'Fast, efficient' },
           { id: 'mistral-small', name: 'Mistral Small', description: 'Balanced performance' }
         ]);
+      } finally {
+        setModelsLoading(false);
       }
     };
     fetchModels();
@@ -158,7 +162,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
       {/* Model Selection with Dropdowns */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Models to Compare ({selectedModels.length}/3)
+          Models to Compare ({selectedModels.length}/3) - {modelsLoading ? 'Loading...' : `${availableModels.length} models available`}
         </label>
         <div className="space-y-2">
           {[0, 1, 2].map((index) => (
@@ -180,7 +184,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
                   setSelectedModels(uniqueModels);
                 }}
                 disabled={isLoading}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 max-h-40 overflow-y-auto"
               >
                 <option value="">Select a model...</option>
                 {availableModels
