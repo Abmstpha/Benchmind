@@ -50,7 +50,7 @@ class TaskSimulator:
         start_time = time.time()
         try:
             response, energy_wh, co2_g = call_mistral_api_with_ecologits(
-                model_id, test_prompt, expected_response_tokens, api_key
+                model_id, test_prompt, expected_response_tokens, self.mistral_api_key
             )
             end_time = time.time()
         except Exception as e:
