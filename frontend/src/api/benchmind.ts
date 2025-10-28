@@ -8,7 +8,7 @@ const API_BASE_URL = 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 120000, // Increase to 2 minutes for EcoLogits calls
 });
 
 // Types matching our backend
@@ -80,8 +80,19 @@ export const benchmindApi = {
 
   // AI Consultant
   async getAIRecommendation(request: { task_description: string; user_context?: string; selected_models?: string[] }) {
-    const response = await api.post('/ai-consultant', request);
-    return response.data;
+    console.log('🔍 Making API call to /ai-consultant/ with:', request);
+    try {
+      const response = await api.post('/ai-consultant/', request);
+      console.log('✅ API response received:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ API call failed:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    }
   },
 
   // Convert API results to chart data format (for existing charts)

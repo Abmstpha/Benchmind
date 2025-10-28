@@ -23,6 +23,7 @@ import {
 
 interface BenchmarkResult {
   model: string;
+  model_id?: string;
   latency_ms: number;
   cost_usd: number;
   energy_wh: number;
@@ -36,27 +37,40 @@ interface BenchmarkChartsProps {
 }
 
 export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => {
+  console.log('BenchmarkCharts received results:', results); // Debug log
+  
+  // Handle empty results
+  if (!results || results.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <p>No benchmark data available. Please run a benchmark first.</p>
+      </div>
+    );
+  }
+  
   // Transform data for different chart types
   const chartData = results.map(result => ({
-    name: result.model.replace('Mistral ', '').replace('Open ', ''),
-    latency: Math.round(result.latency_ms),
-    cost: result.cost_usd * 1000000, // Convert to micro-dollars for better display
-    co2: Math.round(result.co2_g * 100) / 100,
-    energy: Math.round(result.energy_wh * 100) / 100,
+    name: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
+    latency: Math.round(result.latency_ms || 0),
+    cost: (result.cost_usd || 0) * 1000000, // Convert to micro-dollars for better display
+    co2: Math.round((result.co2_g || 0) * 100) / 100,
+    energy: Math.round((result.energy_wh || 0) * 100) / 100,
     tokens: result.tokens_used || 0
   }));
+  
+  console.log('Transformed chartData:', chartData); // Debug log
 
   // Radar chart data (normalized to 0-100 scale)
   const radarData = results.map(result => {
-    const maxLatency = Math.max(...results.map(r => r.latency_ms));
-    const maxCost = Math.max(...results.map(r => r.cost_usd));
-    const maxCO2 = Math.max(...results.map(r => r.co2_g));
+    const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
+    const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
+    const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
     
     return {
-      model: result.model.replace('Mistral ', '').replace('Open ', ''),
-      Speed: Math.round((1 - result.latency_ms / maxLatency) * 100), // Invert latency (lower is better)
-      'Cost Efficiency': Math.round((1 - result.cost_usd / maxCost) * 100), // Invert cost
-      'Green Score': Math.round((1 - result.co2_g / maxCO2) * 100) // Invert CO2
+      model: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
+      Speed: Math.round((1 - (result.latency_ms || 0) / maxLatency) * 100), // Invert latency (lower is better)
+      'Cost Efficiency': Math.round((1 - (result.cost_usd || 0) / maxCost) * 100), // Invert cost
+      'Green Score': Math.round((1 - (result.co2_g || 0) / maxCO2) * 100) // Invert CO2
     };
   });
 
@@ -74,23 +88,35 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <XAxis 
               type="number" 
               dataKey="cost" 
-              name="Cost (micro-USD)" 
+              name="Cost" 
               domain={['dataMin - 10', 'dataMax + 10']}
               label={{ value: 'Cost (micro-USD) - Lower is Better', position: 'insideBottom', offset: -10 }}
             />
             <YAxis 
               type="number" 
               dataKey="co2" 
-              name="CO₂ Emissions (g)" 
+              name="CO₂" 
               domain={[0, 'dataMax + 0.01']}
               label={{ value: 'CO₂ Emissions (g) - Lower is Better', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip 
-              formatter={(value, name) => [
-                name === 'co2' ? `${value}g CO₂` : `${value}μ$`,
-                name === 'co2' ? 'CO₂ Emissions' : 'Cost'
-              ]}
-              labelFormatter={(label) => `${label}`}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length > 0) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+                      <p className="font-medium text-gray-900">{data.name}</p>
+                      <p className="text-sm text-gray-600">
+                        <span className="text-blue-600">Cost:</span> ${data.cost.toFixed(1)}μ
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="text-red-600">CO₂:</span> {data.co2}g
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Legend 
               verticalAlign="top" 
@@ -102,7 +128,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
                 key={entry.name}
                 name={entry.name}
                 data={[entry]} 
-                fill={index === 0 ? "#3B82F6" : "#8B5CF6"} 
+                fill={index === 0 ? "#3B82F6" : index === 1 ? "#10B981" : "#8B5CF6"} 
               />
             ))}
           </ScatterChart>
@@ -213,6 +239,85 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
         </div>
       </div>
 
+      {/* EcoLogits Insights */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">🌱 EcoLogits Environmental Insights</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {results.map((result, index) => {
+            const energyEquivalent = ((result.energy_wh || 0) * 1000).toFixed(1); // Convert to mWh
+            const co2Equivalent = ((result.co2_g || 0) * 1000).toFixed(1); // Convert to mg
+            
+            return (
+              <div key={index} className="bg-white p-4 rounded-lg shadow-sm">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  {result.model || result.model_id || 'Unknown'}
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Energy:</span>
+                    <span className="font-medium text-green-700">{(result.energy_wh || 0).toFixed(3)} Wh</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">CO₂:</span>
+                    <span className="font-medium text-red-700">{(result.co2_g || 0).toFixed(3)} g</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Efficiency:</span>
+                    <span className="font-medium text-blue-700">
+                      {result.tokens_used ? ((result.energy_wh || 0) / result.tokens_used * 1000).toFixed(2) : '0'} mWh/token
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      ≈ {energyEquivalent}mWh energy • {co2Equivalent}mg CO₂
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>💡 EcoLogits Methodology:</strong> Real environmental impact data measured using ISO 14044 standards. 
+            Energy consumption and CO₂ emissions are calculated based on actual model inference and data center efficiency.
+          </p>
+        </div>
+        
+        {/* Environmental Impact Comparison */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
+            <div className="space-y-1 text-sm">
+              {results.map((result, index) => {
+                const ledMinutes = ((result.energy_wh || 0) / 0.01 * 60).toFixed(1); // LED bulb equivalent
+                return (
+                  <div key={index} className="flex justify-between">
+                    <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>
+                    <span className="text-green-700">≈ {ledMinutes}min LED bulb</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <h4 className="font-medium text-gray-900 mb-2">🌍 Carbon Footprint</h4>
+            <div className="space-y-1 text-sm">
+              {results.map((result, index) => {
+                const carMeters = ((result.co2_g || 0) / 120 * 1000).toFixed(1); // Car driving equivalent (120g CO2/km)
+                return (
+                  <div key={index} className="flex justify-between">
+                    <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>
+                    <span className="text-red-700">≈ {carMeters}m car driving</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Performance Summary Table */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold mb-4 text-gray-800">📋 Performance Summary</h3>
@@ -232,24 +337,24 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               {results.map((result, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {result.model}
+                    {result.model || result.model_id || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {result.tokens_used} tokens
+                      {result.tokens_used || 0} tokens
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {Math.round(result.latency_ms)}ms
+                    {Math.round(result.latency_ms || 0)}ms
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${(result.cost_usd * 1000000).toFixed(2)}μ
+                    ${((result.cost_usd || 0) * 1000000).toFixed(2)}μ
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {result.co2_g.toFixed(2)}g
+                    {(result.co2_g || 0).toFixed(3)}g
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {result.energy_wh.toFixed(2)}Wh
+                    {(result.energy_wh || 0).toFixed(3)}Wh
                   </td>
                 </tr>
               ))}

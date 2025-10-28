@@ -176,7 +176,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="w-full bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           🤖 AI Consultant
@@ -303,7 +303,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            AI is analyzing your task...
+            AI is benchmarking models & measuring environmental impact... (this may take 1-2 minutes)
           </div>
         ) : (
           '🌱 See greenest models'
@@ -338,12 +338,19 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           </div>
 
           {/* Visual Charts */}
-          {recommendation.benchmark_results && (
+          {recommendation.benchmark_results && recommendation.benchmark_results.length > 0 ? (
             <div className="mt-6">
               <h5 className="text-lg font-medium text-gray-900 mb-4">
-                📊 Visual Performance Analysis
+                📊 Visual Performance Analysis & EcoLogits Insights
               </h5>
               <BenchmarkCharts results={recommendation.benchmark_results} />
+            </div>
+          ) : (
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm">
+                <strong>⚠️ No benchmark data available.</strong> The AI recommendation was generated but environmental impact data is missing.
+                This might happen if the benchmarking tool didn't execute properly.
+              </p>
             </div>
           )}
 
