@@ -13,7 +13,7 @@ from unittest.mock import patch
 import logging
 
 # Add backend to path
-sys.path.append('/Users/abdu07/Desktop/PROJECTS/Benchmind/backend')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend')))
 
 # Set up logging to capture network calls
 logging.basicConfig(level=logging.DEBUG)
