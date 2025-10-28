@@ -23,12 +23,11 @@ import {
 
 interface BenchmarkResult {
   model: string;
-  quality: number;
   latency_ms: number;
   cost_usd: number;
   energy_wh: number;
   co2_g: number;
-  tokens_used?: number;
+  tokens_used: number;
   test_prompt?: string;
 }
 
@@ -40,7 +39,6 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
   // Transform data for different chart types
   const chartData = results.map(result => ({
     name: result.model.replace('Mistral ', '').replace('Open ', ''),
-    quality: Math.round(result.quality * 100),
     latency: Math.round(result.latency_ms),
     cost: result.cost_usd * 1000000, // Convert to micro-dollars for better display
     co2: Math.round(result.co2_g * 100) / 100,
@@ -56,7 +54,6 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     
     return {
       model: result.model.replace('Mistral ', '').replace('Open ', ''),
-      Quality: Math.round(result.quality * 100),
       Speed: Math.round((1 - result.latency_ms / maxLatency) * 100), // Invert latency (lower is better)
       'Cost Efficiency': Math.round((1 - result.cost_usd / maxCost) * 100), // Invert cost
       'Green Score': Math.round((1 - result.co2_g / maxCO2) * 100) // Invert CO2
@@ -68,34 +65,46 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
 
   return (
     <div className="space-y-8">
-      {/* Quality vs Speed Scatter Plot */}
+      {/* Cost vs Environmental Impact */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">🎯 Quality vs Speed Trade-off</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <ScatterChart>
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost vs Environmental Impact</h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart data={chartData} margin={{ top: 60, right: 20, bottom: 60, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               type="number" 
-              dataKey="latency" 
-              name="Latency (ms)" 
-              domain={['dataMin - 100', 'dataMax + 100']}
-              label={{ value: 'Latency (ms) - Lower is Better', position: 'insideBottom', offset: -10 }}
+              dataKey="cost" 
+              name="Cost (micro-USD)" 
+              domain={['dataMin - 10', 'dataMax + 10']}
+              label={{ value: 'Cost (micro-USD) - Lower is Better', position: 'insideBottom', offset: -10 }}
             />
             <YAxis 
               type="number" 
-              dataKey="quality" 
-              name="Quality %" 
-              domain={[60, 100]}
-              label={{ value: 'Quality (%)', angle: -90, position: 'insideLeft' }}
+              dataKey="co2" 
+              name="CO₂ Emissions (g)" 
+              domain={[0, 'dataMax + 0.01']}
+              label={{ value: 'CO₂ Emissions (g) - Lower is Better', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip 
               formatter={(value, name) => [
-                name === 'quality' ? `${value}%` : `${value}ms`,
-                name === 'quality' ? 'Quality' : 'Latency'
+                name === 'co2' ? `${value}g CO₂` : `${value}μ$`,
+                name === 'co2' ? 'CO₂ Emissions' : 'Cost'
               ]}
-              labelFormatter={(label) => `Model: ${label}`}
+              labelFormatter={(label) => `${label}`}
             />
-            <Scatter name="Models" data={chartData} fill="#3B82F6" />
+            <Legend 
+              verticalAlign="top" 
+              height={36}
+              iconType="circle"
+            />
+            {chartData.map((entry, index) => (
+              <Scatter 
+                key={entry.name}
+                name={entry.name}
+                data={[entry]} 
+                fill={index === 0 ? "#3B82F6" : "#8B5CF6"} 
+              />
+            ))}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -108,14 +117,6 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <PolarGrid />
             <PolarAngleAxis dataKey="model" />
             <PolarRadiusAxis domain={[0, 100]} tickCount={5} />
-            <Radar
-              name="Quality"
-              dataKey="Quality"
-              stroke="#3B82F6"
-              fill="#3B82F6"
-              fillOpacity={0.1}
-              strokeWidth={2}
-            />
             <Radar
               name="Speed"
               dataKey="Speed"
@@ -149,16 +150,16 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
       {/* Performance Metrics Bar Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Quality Comparison */}
+        {/* Response Length Comparison */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">📊 Quality Comparison</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">📊 Response Length Comparison</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip formatter={(value) => [`${value}%`, 'Quality']} />
-              <Bar dataKey="quality" fill="#10B981" radius={[4, 4, 0, 0]} />
+              <YAxis domain={[0, 'dataMax + 50']} />
+              <Tooltip formatter={(value) => [`${value} tokens`, 'Response Length']} />
+              <Bar dataKey="tokens" fill="#10B981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -220,7 +221,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Length</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latency</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CO₂</th>
@@ -234,8 +235,8 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
                     {result.model}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {Math.round(result.quality * 100)}%
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {result.tokens_used} tokens
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

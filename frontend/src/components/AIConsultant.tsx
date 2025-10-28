@@ -18,6 +18,17 @@ const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
       .replace(/^\* (.+)$/gm, '<li>$1</li>')
       // wrap <li> in <ul>
       .replace(/(<li>.*<\/li>\s*)+/gs, '<ul>$&</ul>')
+      // markdown tables
+      .replace(/\|(.+)\|/g, (_, content) => {
+        const cells = content.split('|').map((cell: string) => cell.trim());
+        if (cells.some((cell: string) => cell.includes('---'))) {
+          return ''; // Skip separator rows
+        }
+        const cellTags = cells.map((cell: string) => `<td>${cell}</td>`).join('');
+        return `<tr>${cellTags}</tr>`;
+      })
+      // wrap table rows
+      .replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="benchmark-table">$&</table>')
       // line breaks
       .replace(/\n/g, '<br>')
       // clean spaces
@@ -39,12 +50,11 @@ interface AIConsultantProps {
 
 interface BenchmarkResult {
   model: string;
-  quality: number;
   latency_ms: number;
   cost_usd: number;
   energy_wh: number;
   co2_g: number;
-  recommendations_found: number;
+  tokens_used: number;
 }
 
 interface AIRecommendation {

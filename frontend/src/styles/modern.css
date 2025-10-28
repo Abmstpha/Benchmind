@@ -291,3 +291,31 @@
 .formatted-recommendation br {
   margin: 0.25rem 0;
 }
+
+/* Benchmark Table Styles */
+.benchmark-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.benchmark-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.benchmark-table tr:first-child td {
+  background-color: white;
+  font-weight: 600;
+  color: #374151;
+}
+
+.benchmark-table td {
+  background-color: white;
+}
+
+.benchmark-table tr:hover td {
+  background-color: #f9fafb;
+}
