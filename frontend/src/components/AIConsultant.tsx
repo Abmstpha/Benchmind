@@ -16,8 +16,8 @@ const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       // bullet points
       .replace(/^\* (.+)$/gm, '<li>$1</li>')
-      // wrap <li> in <ul>
-      .replace(/(<li>.*<\/li>\s*)+/gs, '<ul>$&</ul>')
+      // wrap consecutive <li> in <ul>
+      .replace(/((?:<li>.*?<\/li>\s*){2,})/gs, '<ul>$1</ul>')
       // markdown tables
       .replace(/\|(.+)\|/g, (_, content) => {
         const cells = content.split('|').map((cell: string) => cell.trim());
