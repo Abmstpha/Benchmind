@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
+import DOMPurify from 'dompurify';
 
 // Format markdown text
 const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
@@ -36,10 +37,12 @@ const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
       .trim();
   };
 
+  const sanitizedHtml = DOMPurify.sanitize(formatText(text));
+  
   return (
     <div 
       className="formatted-recommendation"
-      dangerouslySetInnerHTML={{ __html: formatText(text) }}
+      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   );
 };
