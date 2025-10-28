@@ -288,9 +288,6 @@
   list-style-type: disc;
 }
 
-.formatted-recommendation br {
-  margin: 0.25rem 0;
-}
 
 /* Benchmark Table Styles */
 .benchmark-table {
