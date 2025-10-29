@@ -5,9 +5,9 @@
   **Environment-First AI Model Selection Platform**
 </div>
 
-**The first AI governance layer that helps teams choose the right model — not just for accuracy, but for the planet.**
+**The first AI governance layer that helps teams choose the right model — not just for performance, but for the planet.**
 
-Transform your AI model selection process with intelligent, data-driven recommendations that consider quality, performance, cost, and environmental impact. Aligned with French "IA frugale" specifications and ADEME carbon evaluation standards.
+Transform your AI model selection process with intelligent, data-driven recommendations that consider **performance, cost, and environmental impact**. Aligned with French "IA frugale" specifications and ADEME carbon evaluation standards.
 
 ## 🎯 Overview
 
@@ -16,18 +16,19 @@ Benchmind is a comprehensive AI model evaluation platform that helps developers,
 ### 🧪 **Technical Credibility**
 - **Real API Measurements** - Actual Mistral API calls, not simulated metrics
 - **Scientific Methodology** - EcoLogits energy computation (ISO 14044 standard)
-- **Live Performance Tracking** - Real-time latency, cost, and quality measurement
+- **Live Performance Tracking** - Real-time latency, cost, and environmental measurement
 - **Pareto-Optimal Recommendations** - NSGA-II inspired multi-objective optimization
 - **Regulatory Alignment** - AFNOR Spec 2314 (Frugal AI Framework) compliance
 
 ### Core Value Proposition
 
-Evaluate and select AI models across **4 key dimensions**:
+Evaluate and select AI models across **3 key efficiency dimensions**:
 
-1. **🎯 Quality/Accuracy** - Performance on your specific tasks
-2. **⚡ Latency/Speed** - Response time and real-time performance  
-3. **💰 Cost Efficiency** - Token pricing and operational expenses
-4. **🌱 Environmental Impact** - Energy consumption and carbon footprint
+1. **⚡ Latency/Speed** - Response time and real-time performance  
+2. **💰 Cost Efficiency** - Token pricing and operational expenses
+3. **🌱 Environmental Impact** - Energy consumption and carbon footprint
+
+**Note:** Benchmind focuses on objective efficiency metrics. We do not validate model output quality or functional correctness — you should test quality internally before using our efficiency recommendations.
 
 ## ✨ Key Features
 
@@ -154,8 +155,8 @@ Frontend available at: `http://localhost:3000`
 
 4. **📊 Review Results**
    - **Multi-dimensional charts**: Radar plots, bar charts, performance tables
-   - **Strategic recommendations**: "For legal documents, Open Mistral Nemo offers 90% quality..."
-   - **Trade-off analysis**: Cost vs quality vs environmental impact
+   - **Strategic recommendations**: "For your use case, Mistral Small offers optimal latency/cost/carbon balance..."
+   - **Trade-off analysis**: Cost vs latency vs environmental impact
    - **Reasoning transparency**: See exactly how the agent made its decisions
 
 ## 🔄 Intelligent Workflow
@@ -211,11 +212,10 @@ Generated Test Prompt:
 - open-mistral-nemo → API Call → Response + Metrics
 ```
 
-#### 5. **📊 Performance Metrics Collection**
+#### 5. **📊 Efficiency Metrics Collection**
 ```json
 {
-  "model": "Open Mistral Nemo",
-  "quality": 0.9,           // ✅ Accuracy assessment
+  "model": "Mistral Small",
   "latency_ms": 742.58,     // ⚡ Speed measurement
   "cost_usd": 0.000416,     // 💰 Real cost calculation
   "energy_wh": 0.312,       // 🌱 Environmental impact
@@ -227,19 +227,17 @@ Generated Test Prompt:
 #### 6. **🧠 Intelligent Analysis & Recommendation**
 ```
 Agent Reasoning:
-"For legal contract summarization, quality and accuracy are paramount. 
-Open Mistral Nemo stands out with 90% quality, fastest response time (743ms), 
-and superior accuracy for legal documents. While it costs more ($0.000416 vs $0.0000615), 
-the enhanced accuracy justifies the cost for legal use cases..."
+"For your legal contract summarization task, you need to balance efficiency with your quality requirements. 
+Mistral Small offers fastest response time (743ms) with moderate cost ($0.000416) and low carbon footprint (0.0936g CO₂). 
+Mistral Tiny is 10x cheaper but 2x slower. The efficiency trade-off depends on your quality validation and budget constraints..."
 ```
 
 #### 7. **📈 Visual Dashboard**
-- **🕸️ Multi-dimensional radar chart** - Performance overview
-- **📊 Quality comparison bars** - Model accuracy ranking  
+- **🕸️ Multi-dimensional radar chart** - Efficiency overview
 - **⚡ Latency comparison** - Speed analysis
 - **💰 Cost efficiency** - Budget optimization
 - **🌱 Environmental impact** - Green AI metrics
-- **📋 Performance summary table** - Complete data overview
+- **📋 Efficiency summary table** - Complete data overview
 
 ## 🔧 API Endpoints
 
@@ -263,11 +261,10 @@ the enhanced accuracy justifies the cost for legal use cases..."
 {
   "success": true,
   "task": "I'm creating a document summarization tool for legal contracts",
-  "recommendation": "For your legal contract summarization tool, **Open Mistral Nemo** is the optimal choice with 90% quality, 743ms latency, and superior accuracy for legal documents...",
+  "recommendation": "For your legal contract summarization tool, **Mistral Small** offers optimal efficiency with 743ms latency, $0.000416 cost, and 0.0936g CO₂. Mistral Tiny is 10x cheaper but slower. Choose based on your quality validation and budget...",
   "benchmark_results": [
     {
-      "model": "Open Mistral Nemo",
-      "quality": 0.9,
+      "model": "Mistral Small",
       "latency_ms": 742.58,
       "cost_usd": 0.000416,
       "energy_wh": 0.312,
@@ -289,8 +286,8 @@ Our ReAct agent powered by Google Gemini:
 2. **💭 Reasons** about the best approach for testing
 3. **🛠️ Creates** custom test prompts that simulate real usage
 4. **⚡ Executes** benchmarks with actual API calls
-5. **📈 Measures** quality, latency, cost, and environmental impact
-6. **🎯 Recommends** optimal models with detailed explanations
+5. **📈 Measures** latency, cost, and environmental impact
+6. **🎯 Recommends** optimal efficiency trade-offs with detailed explanations
 
 ## 🌱 Green AI Focus
 
