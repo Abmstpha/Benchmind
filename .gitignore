@@ -62,3 +62,7 @@ test_dynamic_fetch.py
 # Build artifacts
 *.tar.gz
 *.zip
+
+
+#starter
+agent-starter-pack/
