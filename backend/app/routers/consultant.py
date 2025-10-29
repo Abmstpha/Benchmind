@@ -7,6 +7,11 @@ from typing import Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 
+from google.adk.runners import Runner
+from google.adk.sessions.in_memory_session_service import InMemorySessionService
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.genai import types
+
 from ..agents.agent import create_consultant_agent
 from ..schemas.requests import AIConsultantRequest
 from ..schemas.responses import AIConsultantResponse
@@ -48,49 +53,103 @@ async def get_ai_recommendation(request: AIConsultantRequest):
     try:
         # Prepare the prompt for ReAct agent
         consultant_logger.info("🔧 Preparing ReAct agent prompt...")
+        
+        # STEP 1: Run web search FIRST to get real URLs
+        consultant_logger.info("🔍 PRE-RUNNING web search to get quality data...")
+        from ..agents.web_search_tool import search_model_quality_info
+        web_search_data = None
+        try:
+            models_str = ",".join(request.selected_models)
+            web_search_data = search_model_quality_info(models_str)
+            consultant_logger.info(f"✅ Web search completed: {len(web_search_data)} chars")
+            consultant_logger.info(f"📎 Web search preview: {web_search_data[:200]}...")
+        except Exception as e:
+            consultant_logger.error(f"❌ Pre-search failed: {e}")
+            web_search_data = "Web search unavailable. Focus on efficiency metrics only."
+        
+        # STEP 2: Build prompt with web search results included
         prompt_parts = [request.task_description]
         if request.user_context:
             prompt_parts.append(f"Additional context: {request.user_context}")
         prompt_parts.append(f"Please compare these specific models: {', '.join(request.selected_models)}")
         
+        # CRITICAL: Include web search results in prompt so agent can use real URLs
+        if web_search_data:
+            prompt_parts.append(f"\n\n🔍 **QUALITY DATA FROM WEB SEARCH (use these exact URLs in Section 2):**\n{web_search_data}")
+        
         full_prompt = "\n\n".join(prompt_parts)
         consultant_logger.info(f"📝 Full prompt prepared ({len(full_prompt)} chars)")
         
-        consultant_logger.info("🧠 Invoking ReAct agent DIRECTLY (no wrapper)...")
+        consultant_logger.info("🧠 Invoking ADK ReAct agent using Runner...")
         
-        # Call ReAct agent DIRECTLY
-        result = react_agent.invoke({
-            "messages": [{"role": "user", "content": full_prompt}]
-        })
+        # Ensure GOOGLE_API_KEY is set for ADK (it looks for this env var)
+        # We use GEMINI_API_KEY in our .env, so copy it to GOOGLE_API_KEY for ADK
+        import os
+        if not os.environ.get("GOOGLE_API_KEY") and settings.gemini_api_key:
+            os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
+            consultant_logger.info("✅ Set GOOGLE_API_KEY from GEMINI_API_KEY")
+        
+        # Create session service and session (following official ADK pattern)
+        session_service = InMemorySessionService()
+        session = session_service.create_session_sync(
+            user_id="benchmind-user",
+            app_name="benchmind"
+        )
+        
+        # Create Runner (the official way to invoke ADK agents)
+        runner = Runner(
+            agent=react_agent,
+            session_service=session_service,
+            app_name="benchmind"
+        )
+        
+        # Create message content
+        message = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=full_prompt)]
+        )
+        
+        # Create RunConfig for streaming
+        run_config = RunConfig(streaming_mode=StreamingMode.SSE)
+        
+        # Call ADK agent via Runner - iterate over events
+        final_response = None
+        all_events = []
+        
+        consultant_logger.info("🔄 Starting Runner.run() iteration...")
+        
+        # Use Runner.run() - the official ADK pattern
+        for event in runner.run(
+            new_message=message,
+            user_id="benchmind-user",
+            session_id=session.id,
+            run_config=run_config
+        ):
+            consultant_logger.info(f"📦 Event received - type: {type(event).__name__}")
+            consultant_logger.info(f"📦 Event attributes: {dir(event)}")
+            all_events.append(event)
+            
+            # Extract content from ADK Event objects
+            # Events have a 'content' attribute with Content objects
+            if hasattr(event, 'content') and event.content:
+                if hasattr(event.content, 'parts') and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            if final_response is None:
+                                final_response = ""
+                            final_response += part.text
+                            consultant_logger.info(f"📝 Extracted text chunk: {part.text[:100]}...")
+        
+        recommendation = final_response if final_response else "No response from agent"
         
         consultant_logger.info("✅ ReAct agent invocation completed")
-        consultant_logger.info(f"📊 Agent result type: {type(result)}")
-        consultant_logger.info(f"📊 Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+        consultant_logger.info(f"📝 Recommendation length: {len(recommendation)} chars")
+        consultant_logger.info(f"📊 Total events received: {len(all_events)}")
         
         consultant_logger.info("🔍 STARTING BENCHMARK RESULTS EXTRACTION...")
         
-        try:
-            # Extract response from ReAct agent
-            messages = result.get("messages", [])
-            if messages:
-                final_message = messages[-1]
-                raw_content = final_message.content if hasattr(final_message, 'content') else str(final_message)
-                
-                # Handle complex response formats
-                if isinstance(raw_content, list) and len(raw_content) > 0:
-                    if isinstance(raw_content[0], dict) and 'text' in raw_content[0]:
-                        recommendation = raw_content[0]['text']
-                    else:
-                        recommendation = str(raw_content[0])
-                else:
-                    recommendation = str(raw_content)
-            else:
-                recommendation = "ReAct agent completed but no recommendation generated."
-                
-        except Exception as extract_error:
-            consultant_logger.error(f"❌ EXTRACTION ERROR: {extract_error}")
-            recommendation = "Error extracting recommendation from agent response."
-            messages = []
+        # ADK doesn't return messages like LangGraph, so we'll extract from recommendation text
+        messages = []
         
         # Extract benchmark results from agent messages - COMPREHENSIVE SEARCH
         benchmark_results = []
@@ -183,13 +242,13 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                 
                 consultant_logger.info(f"🔧 Direct tool call: benchmark_models_for_task({task_desc}, {models_str}, {test_prompt})")
                 
-                # Call the tool function directly with correct parameters
-                tool_result = benchmark_models_for_task.invoke({
-                    "user_task": task_desc,
-                    "selected_models": models_str,
-                    "test_prompt": test_prompt,
-                    "complexity": "medium"
-                })
+                # Call the tool function directly (it's a plain Python function, not a LangChain tool)
+                tool_result = benchmark_models_for_task(
+                    user_task=task_desc,
+                    selected_models=models_str,
+                    test_prompt=test_prompt,
+                    complexity="medium"
+                )
                 
                 consultant_logger.info(f"🔧 Direct tool result type: {type(tool_result)}")
                 consultant_logger.info(f"🔧 Direct tool result content: {str(tool_result)[:500]}...")
@@ -233,16 +292,34 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         
         consultant_logger.info("🎉 DIRECT REACT AGENT REQUEST COMPLETED")
         
+        # CRITICAL: Remove duplication if present
+        if recommendation:
+            # Split by common section headers to detect duplication
+            sections = recommendation.split("SECTION 1:")
+            if len(sections) > 2:  # If we have more than one "SECTION 1:", it's duplicated
+                # Keep only the first occurrence
+                recommendation = "SECTION 1:" + sections[1]
+                consultant_logger.warning(f"⚠️ REMOVED DUPLICATION - kept first occurrence only")
+        
+        # web_insights is already set by the forced web search call above
+        # If it wasn't set (no direct tool call), initialize it
+        if 'web_insights' not in locals():
+            web_insights = None
+            consultant_logger.warning("⚠️ web_insights not set - web search may not have run")
+        
         return {
             "success": True,
             "task": request.task_description,
             "recommendation": recommendation,
-            "reasoning_steps": result.get("reasoning_steps", []),
+            "reasoning_steps": [],  # ADK events don't have explicit reasoning steps like LangGraph
             "benchmark_results": benchmark_results,
+            "web_insights": web_insights,  # Latest news/insights from Google Search
             "timestamp": datetime.now().isoformat(),
-            "consultant_version": "3.0-DIRECT-REACT"
+            "consultant_version": "3.0-ADK-GOOGLE-SEARCH"
         }
         
     except Exception as e:
+        import traceback
         consultant_logger.error(f"💥 DIRECT REACT AGENT FAILED: {e}")
+        consultant_logger.error(f"📋 Full traceback:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"ReAct agent failed: {str(e)}")

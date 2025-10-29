@@ -290,11 +290,13 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
             <div className="space-y-1 text-sm">
               {results.map((result, index) => {
-                const ledMinutes = ((result.energy_wh || 0) / 0.01 * 60).toFixed(1); // LED bulb equivalent
+                // LED bulb: ~10W, so 0.01 Wh per 0.1 minutes (6 seconds)
+                // Formula: Wh / 10W * 60 min/hr = minutes of LED bulb runtime
+                const ledMinutes = ((result.energy_wh || 0) * 6).toFixed(1); // 10W LED: Wh * 6 = minutes
                 return (
                   <div key={index} className="flex justify-between">
                     <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>
-                    <span className="text-green-700">≈ {ledMinutes}min LED bulb</span>
+                    <span className="text-green-700">≈ {ledMinutes}min LED bulb (10W)</span>
                   </div>
                 );
               })}
@@ -305,7 +307,9 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <h4 className="font-medium text-gray-900 mb-2">🌍 Carbon Footprint</h4>
             <div className="space-y-1 text-sm">
               {results.map((result, index) => {
-                const carMeters = ((result.co2_g || 0) / 120 * 1000).toFixed(1); // Car driving equivalent (120g CO2/km)
+                // Average car: 120g CO₂/km = 0.12g CO₂/meter
+                // Formula: g CO₂ / 0.12 = meters driven
+                const carMeters = ((result.co2_g || 0) / 0.12).toFixed(1); // Car driving equivalent
                 return (
                   <div key={index} className="flex justify-between">
                     <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>

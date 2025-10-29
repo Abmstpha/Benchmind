@@ -1,5 +1,31 @@
 /* Ultra-Modern CSS Animations and Effects */
 
+/* Clickable Links Styling - High Specificity */
+.formatted-recommendation a,
+.formatted-recommendation a:link,
+.formatted-recommendation a:visited {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  word-break: break-word !important;
+  cursor: pointer !important;
+}
+
+.formatted-recommendation a:hover,
+.formatted-recommendation a:active {
+  color: #1d4ed8 !important;
+  background-color: rgba(37, 99, 235, 0.15) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  text-decoration: underline !important;
+}
+
+/* Copy Button Hover Effect */
+button:has(> :first-child:contains("📋")) {
+  transition: all 0.2s ease;
+}
+
 /* Custom Scrollbar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;

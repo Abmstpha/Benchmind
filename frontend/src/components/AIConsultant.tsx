@@ -10,6 +10,8 @@ import { BenchmarkCharts } from './BenchmarkCharts';
 const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
   const formatText = (text: string) => {
     return text
+      // URLs to clickable links (must be before other formatting)
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>')
       // *italic* to <em> (process before bold, avoid matching inside bold)
       .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
       // **bold** to <strong>
@@ -65,6 +67,7 @@ interface AIRecommendation {
   error?: string;
   fallback_recommendation?: string;
   benchmark_results?: BenchmarkResult[];
+  web_insights?: string;  // Quality insights from web search
   timestamp: string;
   consultant_version: string;
 }
@@ -335,15 +338,50 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
       {/* Recommendation Display */}
       {recommendation && (
         <div className="mt-6 border-t border-gray-200 pt-6">
-          <h4 className="text-lg font-medium text-gray-900 mb-4">
-            🎯 AI Recommendation
-          </h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-medium text-gray-900">
+              🎯 AI Recommendation
+            </h4>
+            <button
+              onClick={() => {
+                const text = recommendation.recommendation || '';
+                navigator.clipboard.writeText(text);
+                alert('Recommendation copied to clipboard!');
+              }}
+              className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-1"
+            >
+              📋 Copy
+            </button>
+          </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 relative">
             <div className="text-gray-800 leading-relaxed prose prose-sm max-w-none">
               <FormattedRecommendation text={formatRecommendation(recommendation)} />
             </div>
           </div>
+
+          {/* Quality Insights from Web Search */}
+          {recommendation.web_insights && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h5 className="text-md font-semibold text-blue-900">
+                  📊 Quality & Benchmark Insights
+                </h5>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(recommendation.web_insights || '');
+                    alert('Quality insights copied to clipboard!');
+                  }}
+                  className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                >
+                  📋 Copy
+                </button>
+              </div>
+              <div className="text-gray-800 text-sm leading-relaxed">
+                <FormattedRecommendation text={recommendation.web_insights} />
+              </div>
+            </div>
+          )}
 
           {/* Visual Charts */}
           {recommendation.benchmark_results && recommendation.benchmark_results.length > 0 ? (

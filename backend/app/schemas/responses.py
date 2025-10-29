@@ -20,6 +20,7 @@ class AIConsultantResponse(BaseModel):
     recommendation: Optional[str] = Field(None, description="AI recommendation text")
     reasoning_steps: List[Any] = Field(default=[], description="Agent reasoning steps")
     benchmark_results: List[Dict[str, Any]] = Field(default=[], description="Benchmark results data")
+    web_insights: Optional[str] = Field(None, description="Latest insights from web search about the models")
     error: Optional[str] = Field(None, description="Error message if consultation failed")
     fallback_recommendation: Optional[str] = Field(None, description="Fallback recommendation")
     timestamp: str = Field(..., description="Timestamp of the consultation")
