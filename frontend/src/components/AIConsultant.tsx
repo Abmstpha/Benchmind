@@ -184,6 +184,14 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         <p className="text-gray-600">
           Describe your AI task and get intelligent model recommendations with detailed analysis
         </p>
+        
+        {/* Efficiency-Only Disclaimer */}
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-sm text-green-800">
+            <strong>⚡ Efficiency-First Analysis:</strong> Benchmind provides objective data on <strong>Cost, Latency, Energy, and Carbon</strong>. 
+            We do not validate model output quality or functional correctness. You should test quality internally before using our efficiency recommendations.
+          </p>
+        </div>
       </div>
 
       {/* Task Description */}

@@ -128,7 +128,7 @@ def analyze_cost_efficiency(budget_usd: float) -> str:
     }
     
     if budget_usd >= 0.002:
-        analysis["recommendations"].append("Both models fit your budget. Consider quality vs cost trade-offs.")
+        analysis["recommendations"].append("Both models fit your budget. Consider latency vs cost trade-offs..")
     elif budget_usd >= 0.00025:
         analysis["recommendations"].append("Only Mistral Tiny fits your budget, but it's very cost-effective.")
     else:

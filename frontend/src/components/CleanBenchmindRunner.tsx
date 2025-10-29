@@ -253,9 +253,6 @@ export const CleanBenchmindRunner: React.FC<CleanBenchmindRunnerProps> = ({ onRe
                     Model
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Quality
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Latency
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -275,9 +272,6 @@ export const CleanBenchmindRunner: React.FC<CleanBenchmindRunnerProps> = ({ onRe
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{result.model_name}</div>
                       <div className="text-sm text-gray-500">{result.tokens_used} tokens</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {result.quality_score.toFixed(2)}/5.0
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {result.latency_ms.toFixed(0)}ms

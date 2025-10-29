@@ -226,8 +226,7 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                     "latency_ms": float(latency_match.group(1)) if latency_match else 618,
                     "co2_g": float(co2_match.group(1)) if co2_match else 0.0608,
                     "energy_wh": float(energy_match.group(1)) if energy_match else 0.0996,
-                    "tokens_used": 100,
-                    "quality_score": 85
+                    "tokens_used": 100
                 }
                 benchmark_results = [mock_result]
                 consultant_logger.info(f"✅ Created fallback benchmark result: {mock_result}")

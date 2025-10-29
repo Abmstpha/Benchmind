@@ -16,7 +16,6 @@ export interface ModelResult {
   model_id: string;
   model_name: string;
   response: string;
-  quality_score: number;
   latency_ms: number;
   cost_usd: number;
   energy_wh: number;
@@ -100,7 +99,6 @@ export const benchmindApi = {
     return results.map(result => ({
       // Map to existing chart format
       metric: result.model_name,
-      p01: result.quality_score,
       p02: result.latency_ms / 1000, // Convert to seconds
       p03: result.cost_usd * 1000000, // Convert to micro-dollars for visibility
       p04: result.energy_wh,
@@ -119,7 +117,6 @@ export const benchmindApi = {
     const headers = ['metric', 'quality', 'latency_s', 'cost_usd', 'energy_wh', 'co2_g'];
     const rows = results.map(result => [
       result.model_name,
-      result.quality_score.toString(),
       (result.latency_ms / 1000).toString(),
       result.cost_usd.toString(),
       result.energy_wh.toString(),

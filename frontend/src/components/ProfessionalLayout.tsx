@@ -145,9 +145,6 @@ export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
                                   Model
                                 </th>
                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Quality
-                                </th>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Latency
                                 </th>
                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -163,9 +160,6 @@ export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
                                 <tr key={index} className={result.model_id === benchmark.winner ? 'bg-green-50' : ''}>
                                   <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {result.model_name}
-                                  </td>
-                                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                                    {result.quality_score.toFixed(2)}/5.0
                                   </td>
                                   <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                     {result.latency_ms.toFixed(0)}ms
