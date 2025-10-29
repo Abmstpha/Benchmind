@@ -22,12 +22,13 @@ venv/
 env/
 
 # Node.js / Frontend
-frontend/node_modules/
+node_modules/
 frontend/.next/
 frontend/out/
 frontend/dist/
 frontend/.env.local
 frontend/.env.production.local
+package-lock.json
 
 # IDE & Editors
 .vscode/
