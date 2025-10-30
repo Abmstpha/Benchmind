@@ -6,49 +6,49 @@ import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
 
-// Format markdown text
+// Format markdown text with enhanced bullet point styling
 const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
   const formatText = (text: string) => {
     return text
       // URLs to clickable links (must be before other formatting)
-      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>')
-      // *italic* to <em> (process before bold, avoid matching inside bold)
-      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
-      // **bold** to <strong>
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      // bullet points
-      .replace(/^\* (.+)$/gm, '<li>$1</li>')
-      // wrap consecutive <li> in <ul>
-      .replace(/((?:<li>.*?<\/li>\s*){2,})/gs, '<ul>$1</ul>')
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline break-all">$1</a>')
+      // **bold** to <strong> (process before italic)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+      // *italic* to <em>
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>')
+      // Section headers (e.g., "**mistral-small:**")
+      .replace(/^([a-z0-9-]+):$/gm, '<h4 class="text-base font-bold text-gray-900 mt-4 mb-2 pb-1 border-b-2 border-blue-300">$1</h4>')
+      // Enhanced bullet points with better styling
+      .replace(/^[•\*]\s+(.+)$/gm, '<li class="ml-4 mb-2 text-gray-700 leading-relaxed">$1</li>')
+      // wrap consecutive <li> in <ul> with better styling
+      .replace(/((?:<li[^>]*>.*?<\/li>\s*){1,})/gs, '<ul class="space-y-1 my-3 list-none">$1</ul>')
       // markdown tables
       .replace(/\|(.+)\|/g, (_, content) => {
         const cells = content.split('|').map((cell: string) => cell.trim());
         if (cells.some((cell: string) => cell.includes('---'))) {
           return ''; // Skip separator rows
         }
-        const cellTags = cells.map((cell: string) => `<td>${cell}</td>`).join('');
+        const cellTags = cells.map((cell: string) => `<td class="px-3 py-2 border border-gray-300">${cell}</td>`).join('');
         return `<tr>${cellTags}</tr>`;
       })
-      // wrap table rows
-      .replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="benchmark-table">$&</table>')
+      // wrap table rows with better styling
+      .replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="benchmark-table w-full my-4 border-collapse">$&</table>')
       // line breaks
       .replace(/\n/g, '<br>')
-      // clean spaces (collapse only spaces and tabs, not newlines)
+      // clean spaces
       .replace(/[ \t]+/g, ' ')
       .trim();
   };
 
   return (
     <div 
-      className="formatted-recommendation"
+      className="formatted-recommendation prose prose-sm max-w-none"
       dangerouslySetInnerHTML={{ __html: formatText(text) }}
     />
   );
 };
 
-interface AIConsultantProps {
-  // Add props as needed
-}
+interface AIConsultantProps {}
 
 interface BenchmarkResult {
   model: string;
@@ -362,22 +362,23 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
 
           {/* Quality Insights from Web Search */}
           {recommendation.web_insights && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="text-md font-semibold text-blue-900">
-                  📊 Quality & Benchmark Insights
+            <div className="mt-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h5 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                  <span className="text-2xl">📊</span>
+                  Quality & Benchmark Insights
                 </h5>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(recommendation.web_insights || '');
                     alert('Quality insights copied to clipboard!');
                   }}
-                  className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all hover:shadow-md"
                 >
                   📋 Copy
                 </button>
               </div>
-              <div className="text-gray-800 text-sm leading-relaxed">
+              <div className="bg-white rounded-lg p-5 shadow-sm">
                 <FormattedRecommendation text={recommendation.web_insights} />
               </div>
             </div>

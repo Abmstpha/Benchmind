@@ -13,10 +13,11 @@ Benchmind is an AI consultant that helps you select optimal models by:
 - 🤖 **Understanding your task** through natural language
 - 🔍 **Searching the web** for model quality benchmarks (MMLU, HumanEval)
 - ⚡ **Benchmarking efficiency** with real API calls (latency, cost, CO₂)
-- 📊 **Visualizing trade-offs** between speed, cost, and environmental impact
+- 📊 **Visualizing trade-offs** with interactive charts (scatter plots, radar charts, bar charts)
+- 🌱 **Color-coded insights** - Green (most eco-friendly) to Red (least eco-friendly)
 - 💡 **Recommending** the best model with detailed reasoning
 
-**Key Innovation:** Combines efficiency metrics (measured) with quality data (web-sourced) for complete model evaluation.
+**Key Innovation:** Combines efficiency metrics (measured via EcoLogits) with quality data (web-sourced) for complete model evaluation.
 
 ## 🏗️ Tech Stack
 
@@ -29,7 +30,7 @@ Benchmind is an AI consultant that helps you select optimal models by:
 ### Prerequisites
 - **Python 3.8+** with pip
 - **Node.js 18+** with npm
-- **API Keys**: Mistral AI, Google Gemini
+- **API Keys**: Mistral AI, **2x Google Gemini keys** (see [API_KEY_SETUP.md](API_KEY_SETUP.md))
 
 ### 1. Backend Setup
 
@@ -48,11 +49,13 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your API keys:
 # MISTRAL_API_KEY=your_mistral_key
-# GEMINI_API_KEY=your_gemini_key
+# GEMINI_API_KEY=your_first_gemini_key   # Main agent
+# GOOGLE_API_KEY=your_second_gemini_key  # Search agent
 
 # Get your API keys from:
 # Mistral API: https://console.mistral.ai/
-# Google Gemini API: https://aistudio.google.com/app/apikey
+# Google Gemini API: https://aistudio.google.com/app/apikey (create 2 keys)
+# See API_KEY_SETUP.md for detailed instructions
 
 # Start the server (choose one)
 python -m app.main                    # Direct Python execution
@@ -81,13 +84,18 @@ Frontend available at: `http://localhost:3000`
 
 ## 🎮 Usage
 
-1. Describe your task: *"I need an AI-powered Q&A system for my knowledge base"*
-2. Select models to compare (or let the agent choose)
-3. Get intelligent recommendations with:
-   - **Efficiency metrics**: Latency, cost, CO₂ (measured via real API calls)
+1. **Describe your task**: *"I need an AI-powered Q&A system for my knowledge base"*
+2. **Select 1-3 models** to compare from the dropdown menu
+3. **Click "🌱 See greenest models"** and wait 1-2 minutes for benchmarking
+4. **Get intelligent recommendations** with:
+   - **Efficiency metrics**: Latency, cost, CO₂ (measured via real API calls + EcoLogits)
    - **Quality insights**: MMLU/HumanEval scores (sourced from web search)
    - **Trade-off analysis**: Speed vs cost vs environmental impact
-   - **Visual charts**: Radar plots, bar charts, comparison tables
+   - **Interactive charts**: 
+     - 💰 Cost vs CO₂ scatter plot (color-coded by greenness)
+     - 🕸️ Multi-dimensional radar chart
+     - 📊 Bar charts for latency, cost, and environmental impact
+     - 🌱 EcoLogits environmental insights with real-world equivalents
 
 ## 📊 Example Output
 
@@ -118,6 +126,68 @@ Winner: Mistral Tiny Latest
 - Fastest latency (1432ms)
 - Lowest CO₂ (0.15g)
 - General-purpose model (vs Devstral's code specialization)
+```
+
+## 🌟 Features
+
+- ✅ **Real-time benchmarking** with actual API calls to Mistral models
+- ✅ **EcoLogits integration** for accurate CO₂ and energy measurements (ISO 14044)
+- ✅ **Google ADK ReAct agent** for intelligent reasoning and tool use
+- ✅ **Independent web search** for quality benchmarks (no rate limit conflicts)
+- ✅ **Dynamic color-coding** - Models ranked by greenness (CO₂ + cost)
+- ✅ **Interactive tooltips** showing exact metrics for each model
+- ✅ **Professional UI** with shadcn/ui components and Tailwind CSS
+
+## 📁 Project Structure
+
+```
+Benchmind/
+├── backend/
+│   ├── app/
+│   │   ├── agents/
+│   │   │   ├── adk_green_agent.py      # Main ReAct agent (Google ADK)
+│   │   │   └── adk_search_agent.py     # Web search sub-agent (DuckDuckGo)
+│   │   ├── tools/
+│   │   │   ├── tools.py                # Benchmarking & cost analysis tools
+│   │   │   └── duckduckgo_search.py    # Web search implementation
+│   │   ├── routers/
+│   │   │   ├── consultant.py           # AI consultant endpoint
+│   │   │   ├── models.py               # Model registry endpoint
+│   │   │   └── test_ecologits.py       # EcoLogits testing endpoint
+│   │   ├── services/
+│   │   │   ├── energy_estimator.py     # Energy/CO₂ calculations
+│   │   │   ├── model_registry.py       # Available models database
+│   │   │   └── simulator.py            # Task simulation logic
+│   │   ├── schemas/
+│   │   │   ├── requests.py             # Pydantic request models
+│   │   │   └── responses.py            # Pydantic response models
+│   │   ├── core/
+│   │   │   ├── config.py               # Settings & environment vars
+│   │   │   ├── logging.py              # Logging configuration
+│   │   │   └── exceptions.py           # Custom exceptions
+│   │   ├── utils/
+│   │   │   └── utils.py                # Helper functions
+│   │   └── main.py                     # FastAPI app entry point
+│   ├── requirements.txt
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AIConsultant.tsx        # Main consultant interface
+│   │   │   ├── BenchmarkCharts.tsx     # Interactive charts (Recharts)
+│   │   │   ├── ProfessionalLayout.tsx  # App layout & navigation
+│   │   │   └── CleanBenchmindRunner.tsx # Alternative UI
+│   │   ├── api/
+│   │   │   └── benchmind.ts            # API client (Axios)
+│   │   ├── styles/
+│   │   │   └── index.css               # Tailwind CSS
+│   │   ├── App.tsx                     # Root component
+│   │   └── main.tsx                    # React entry point
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── .env.example
+├── README.md
+└── API_KEY_SETUP.md
 ```
 
 ## 🤝 Contributing

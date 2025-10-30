@@ -3,37 +3,62 @@ Benchmind AI Consultant - ADK (Agent Development Kit) Agent
 """
 from google.adk.agents import LlmAgent
 from google.adk.models import Gemini
-# NOTE: google_search cannot be used with custom function tools in Gemini 2.5
-# from google.adk.tools.google_search_tool import google_search
+from google.adk.tools.agent_tool import AgentTool
 
-# Import your raw python tool functions
-from .tools import benchmark_models_for_task, analyze_cost_efficiency
-from .web_search_tool import search_model_quality_info
+from ..tools.tools import benchmark_models_for_task, analyze_cost_efficiency
+from .adk_search_agent import create_google_search_agent
+
 from ..core.config import settings
 
 
 def create_consultant_agent(model_name: str) -> LlmAgent:
     """Create ReAct agent with Google ADK for Benchmind AI Consultant."""
     
+    import logging
+    logger = logging.getLogger("benchmind.agent")
+    
     # 1. Check for API key
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
     
     # 2. Create Gemini model instance with API key
+    # CRITICAL: Set response_modalities to force text generation after tool calls
     llm = Gemini(
         model_name=model_name,
         api_key=settings.gemini_api_key,
-        temperature=0.1
+        temperature=0.1,
+        generation_config={
+            "response_modalities": ["TEXT"],  # Force text response
+            "candidate_count": 1,
+        }
     )
     
-    # 3. Define the tools list using the imported functions
-    # NOTE: Cannot include google_search - it conflicts with custom function tools
-    # Using custom web search instead for quality information
+    # 3. Create Google Search sub-agent with rate limiting
+    logger.info("🔧 Creating Google ADK Search sub-agent...")
+    # RE-ENABLED: Search runs independently, won't crash main agent
+    google_search_agent = create_google_search_agent(enable_search=True)
+    
+    if google_search_agent is None:
+        logger.warning("⚠️ Google Search sub-agent disabled - skipping search tool")
+        search_tool = None
+    else:
+        # Wrap sub-agent in AgentTool
+        search_tool = AgentTool(agent=google_search_agent)
+        logger.info("✅ Google ADK Search sub-agent created successfully")
+    
+    # 4. Define the tools list
+    # NOTE: Search runs independently, not as a tool in main agent
     tools = [
         benchmark_models_for_task, 
-        analyze_cost_efficiency,
-        search_model_quality_info  # Custom web search for quality benchmarks
+        analyze_cost_efficiency
     ]
+    
+    logger.info("📋 Registered tools:")
+    for tool in tools:
+        if hasattr(tool, '__name__'):
+            logger.info(f"   - {tool.__name__}")
+        else:
+            logger.info(f"   - {type(tool).__name__}")
     
     # 4. Define the comprehensive prompt
     # This entire prompt string is used as the 'instruction' for the LlmAgent
@@ -74,23 +99,26 @@ THE REACT CYCLE DEFINED
 
 **Action (Tool Call or User Query):**
 You will output one `Action` block with either:
-- Tool call: `benchmark_models_for_task`, `analyze_cost_efficiency`, or `search_model_quality_info`
+- Tool call: `benchmark_models_for_task`, `analyze_cost_efficiency`, or `google_search_specialist`
 - User query for missing constraints
 
 **MANDATORY WORKFLOW:**
-1. First: Call `benchmark_models_for_task()`
-2. Second: IMMEDIATELY call `search_model_quality_info()` with the same model names
-3. Third: Analyze results and provide recommendation
+1. First: Call `benchmark_models_for_task()` to get efficiency metrics
+2. Second: Analyze the benchmark results
+3. Third: Provide a DETAILED TEXT RECOMMENDATION explaining which model to choose and why
+
+**CRITICAL:** After calling tools, you MUST provide a final text response. Do NOT stop after tool calls!
 
 **Observation (System/Tool/User Response):**
 The system will provide an `Observation` block with tool results or user input.
 
 **Repeat (Return to Thought):**
 You will consume the Observation and begin a new Thought step.
-• **After benchmark_models_for_task**: "Observation received. Benchmark complete. I MUST now call search_model_quality_info() before providing recommendations."
-• **After search_model_quality_info**: "Observation received. Web search complete. Now I can provide final recommendations combining efficiency + quality data."
+• **After benchmark_models_for_task**: "Observation received. Benchmark complete. Now I MUST provide a detailed text recommendation analyzing the results."
 • **If Tool Error**: "Observation received. The tool failed. I must inform the user about this error."
 • **If User Response**: "Observation received. The user provided constraints. My next action is to run benchmarks."
+
+**YOU MUST ALWAYS END WITH A TEXT RESPONSE - NEVER STOP AFTER TOOL CALLS!**
 
 **Final Answer (Synthesis):**
 When your Thought process determines you have sufficient data (constraints gathered, benchmarks run, analysis complete), generate a Final Answer following the Decision JSON format in Section IX.
@@ -212,13 +240,9 @@ Required *explanation fields*:
 ────────────────────────────────────────────────────────────────────────────
 VII. TOOL USE & CALLING PROTOCOL
 ────────────────────────────────────────────────────────────────────────────
-You may call tools (or ask the orchestrator to call them) with well-formed JSON. Typical tools:
-• benchmark.run(manifest) → returns results parquet/jsonl
-• models.registry.list() → provider, context window, pricing
-• prices.get(provider) → current price sheet
-• energy.estimate(provider, payload) → Wh/CO₂ (EcoLogits-style)
-• reports.build(run_id) → HTML/PDF with appendices
-• cache.get/put(key) → deduplicate repeated calls
+Available tools:
+• benchmark_models_for_task() → runs benchmarks and returns efficiency metrics
+• analyze_cost_efficiency() → analyzes cost-performance tradeoffs
 
 Rules:
 • Never send secrets to tools accidentally; use redaction where applicable.
@@ -337,38 +361,41 @@ Present the measured efficiency metrics in a clear table:
 **Efficiency Winner:** [Model Name] - lowest CO₂ emissions at [X]g, with [Y]ms latency.
 
 
-**SECTION 2: QUALITY RESEARCH** (From internet search - conversational tone)
+**SECTION 2: ANALYSIS** (Interpret the benchmark results)
 ────────────────────────────────────────────────────────────────────────────
-📊 **What We Found About Model Quality:**
+📊 **What The Numbers Tell Us:**
 
-Speak naturally to the user about what you discovered:
+Analyze the benchmark results you received:
 
-"I searched the internet for quality benchmarks on these models. Here's what I found:
+"Looking at the efficiency measurements:
 
-**[Model 1]:** [Description of quality findings]
-• Source: [URL or publication name] - [Credibility: ✅ Highly Credible / ⚠️ Moderately Credible]
-• Key metrics: [MMLU score, HumanEval, etc. if available]
+**Performance Analysis:**
+• Fastest model: [Model name] at [X]ms
+• Most energy-efficient: [Model name] at [X] Wh
+• Lowest CO₂: [Model name] at [X]g
 
-**[Model 2]:** [Description of quality findings]
-• Source: [URL] - [Credibility assessment]
-• Key metrics: [scores]
+**Cost Analysis:**
+• Most cost-effective: [Model name] at $[X] per 1K tokens
+• Best value for performance: [explain tradeoff]
 
-**Important Note:** [If sources are not highly credible, mention it. If no data found, say: 'No public benchmark data available for these specific versions. I recommend testing on your actual legal contract dataset.']"
+**Key Insights:**
+• [Observation about patterns in the data]
+• [Any surprising findings]"
 
 
 **SECTION 3: FINAL RECOMMENDATION & TRADEOFFS**
 ────────────────────────────────────────────────────────────────────────────
 🎯 **My Recommendation:**
 
-Combine efficiency + quality insights:
+Combine all insights:
 
-"Based on both efficiency measurements and quality research:
+"Based on the efficiency measurements:
 
 **Winner: [Model Name]**
 
 **Why this model:**
 • Efficiency: [specific numbers - latency, CO₂, cost]
-• Quality: [what you found from search - be honest about data availability]
+• Performance: [how it compares to others]
 
 **Tradeoffs to consider:**
 • [Model A] vs [Model B]: [specific tradeoff - e.g., "10% faster but 2x CO₂"]

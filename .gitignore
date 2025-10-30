@@ -55,6 +55,10 @@ htmlcov/
 # Project-specific test files
 check_gemini_models.py
 test_dynamic_fetch.py
+test_search_function.py
+test_subagent_standalone.py
+test_google_search.py
+test_ecologits.py
 
 # Jupyter
 .ipynb_checkpoints/
@@ -63,6 +67,3 @@ test_dynamic_fetch.py
 *.tar.gz
 *.zip
 
-
-#starter
-agent-starter-pack/
