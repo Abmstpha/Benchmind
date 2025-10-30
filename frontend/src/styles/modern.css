@@ -1,5 +1,31 @@
 /* Ultra-Modern CSS Animations and Effects */
 
+/* Clickable Links Styling - High Specificity */
+.formatted-recommendation a,
+.formatted-recommendation a:link,
+.formatted-recommendation a:visited {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  word-break: break-word !important;
+  cursor: pointer !important;
+}
+
+.formatted-recommendation a:hover,
+.formatted-recommendation a:active {
+  color: #1d4ed8 !important;
+  background-color: rgba(37, 99, 235, 0.15) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  text-decoration: underline !important;
+}
+
+/* Copy Button Hover Effect */
+button:has(> :first-child:contains("📋")) {
+  transition: all 0.2s ease;
+}
+
 /* Custom Scrollbar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
@@ -263,14 +289,15 @@
   box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
 }
 
-/* Formatted Recommendation Styles */
+/* Formatted Recommendation Styles - Enhanced */
 .formatted-recommendation {
-  line-height: 1.7;
+  line-height: 1.8;
+  color: #374151;
 }
 
 .formatted-recommendation strong {
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
 }
 
 .formatted-recommendation em {
@@ -279,13 +306,38 @@
 }
 
 .formatted-recommendation ul {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
+  margin: 1rem 0;
+  padding-left: 0;
+  list-style: none;
 }
 
 .formatted-recommendation li {
-  margin: 0.25rem 0;
-  list-style-type: disc;
+  margin: 0.75rem 0;
+  padding-left: 1.75rem;
+  position: relative;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.formatted-recommendation li::before {
+  content: "•";
+  position: absolute;
+  left: 0.5rem;
+  color: #3b82f6;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+/* Nested lists */
+.formatted-recommendation ul ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+.formatted-recommendation ul ul li::before {
+  content: "◦";
+  color: #6b7280;
 }
 
 

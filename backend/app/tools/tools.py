@@ -1,11 +1,11 @@
 """
-Tools for Benchmind AI Consultant ReAct Agent
+Tools for Benchmind AI Consultant ADK Agent
 """
 
 import json
 import time
 import logging
-from langchain_core.tools import tool
+# from langchain_core.tools import tool  # <-- REMOVED for ADK
 from ..utils.utils import call_mistral_api_with_ecologits, calculate_cost, get_model_name
 from ..core.config import settings
 
@@ -19,7 +19,7 @@ if not tools_logger.handlers:
     tools_logger.addHandler(handler)
 
 
-@tool
+# @tool  # <-- REMOVED for ADK
 def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt: str, complexity: str = "medium") -> str:
     """
     Universal AI model benchmarking tool for ANY use case.
@@ -115,7 +115,7 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
     return json.dumps(results)
 
 
-@tool
+# @tool  # <-- REMOVED for ADK
 def analyze_cost_efficiency(budget_usd: float) -> str:
     """Analyze which models fit within a given budget. Input: budget in USD as float"""
     analysis = {

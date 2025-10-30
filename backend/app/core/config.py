@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     
     # API Keys
     mistral_api_key: str = ""
-    gemini_api_key: str = ""
+    gemini_api_key: str = ""  # For main agent
+    google_api_key: str = ""  # For search sub-agent
     
     # Model Configuration
     default_gemini_model: str = "models/gemini-2.5-flash"

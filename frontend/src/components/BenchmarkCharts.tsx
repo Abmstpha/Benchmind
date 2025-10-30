@@ -18,7 +18,8 @@ import {
   PolarRadiusAxis,
   Radar,
   ScatterChart,
-  Scatter
+  Scatter,
+  Cell
 } from 'recharts';
 
 interface BenchmarkResult {
@@ -37,9 +38,6 @@ interface BenchmarkChartsProps {
 }
 
 export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => {
-  console.log('BenchmarkCharts received results:', results); // Debug log
-  
-  // Handle empty results
   if (!results || results.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -48,122 +46,163 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     );
   }
   
-  // Transform data for different chart types
   const chartData = results.map(result => ({
-    name: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
+    name: result.model || result.model_id || 'Unknown',
     latency: Math.round(result.latency_ms || 0),
-    cost: (result.cost_usd || 0) * 1000000, // Convert to micro-dollars for better display
+    cost: (result.cost_usd || 0) * 1000000,
     co2: Math.round((result.co2_g || 0) * 100) / 100,
     energy: Math.round((result.energy_wh || 0) * 100) / 100,
     tokens: result.tokens_used || 0
   }));
   
-  console.log('Transformed chartData:', chartData); // Debug log
-
-  // Radar chart data (normalized to 0-100 scale)
-  const radarData = results.map(result => {
-    const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
-    const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
-    const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
-    
-    return {
-      model: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
-      Speed: Math.round((1 - (result.latency_ms || 0) / maxLatency) * 100), // Invert latency (lower is better)
-      'Cost Efficiency': Math.round((1 - (result.cost_usd || 0) / maxCost) * 100), // Invert cost
-      'Green Score': Math.round((1 - (result.co2_g || 0) / maxCO2) * 100) // Invert CO2
-    };
+  const dataWithScores = chartData.map(d => ({
+    ...d,
+    greenScore: d.co2 + (d.cost / 100)
+  }));
+  
+  const sortedByGreen = [...dataWithScores].sort((a, b) => a.greenScore - b.greenScore);
+  const colorMap: { [key: string]: string } = {};
+  sortedByGreen.forEach((item, idx) => {
+    if (idx === 0) colorMap[item.name] = '#10B981';
+    else if (idx === sortedByGreen.length - 1) colorMap[item.name] = '#EF4444';
+    else colorMap[item.name] = '#F59E0B';
   });
 
-  // Color scheme for models (keeping for future use)
-  // const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const radarData = results.map(result => {
+    const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
+    const minLatency = Math.min(...results.map(r => r.latency_ms || 0));
+    const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
+    const minCost = Math.min(...results.map(r => r.cost_usd || 0));
+    const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
+    const minCO2 = Math.min(...results.map(r => r.co2_g || 0));
+    
+    const normalizeInverted = (value: number, min: number, max: number) => {
+      if (max === min) return 100;
+      // Normalize to 10-100 range: lower values get higher scores
+      return Math.round(10 + (1 - (value - min) / (max - min)) * 90);
+    };
+    
+    return {
+      model: result.model || result.model_id || 'Unknown',
+      Speed: normalizeInverted(result.latency_ms || 0, minLatency, maxLatency),
+      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, minCost, maxCost),
+      'Green Score': normalizeInverted(result.co2_g || 0, minCO2, maxCO2)
+    };
+  });
 
   return (
     <div className="space-y-8">
       {/* Cost vs Environmental Impact */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost vs Environmental Impact</h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <ScatterChart data={chartData} margin={{ top: 60, right: 20, bottom: 60, left: 20 }}>
+        <ResponsiveContainer width="100%" height={450}>
+          <ScatterChart data={chartData} margin={{ top: 60, right: 40, bottom: 60, left: 60 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               type="number" 
               dataKey="cost" 
               name="Cost" 
-              domain={['dataMin - 10', 'dataMax + 10']}
+              domain={['auto', 'auto']}
               label={{ value: 'Cost (micro-USD) - Lower is Better', position: 'insideBottom', offset: -10 }}
             />
             <YAxis 
               type="number" 
               dataKey="co2" 
               name="CO₂" 
-              domain={[0, 'dataMax + 0.01']}
+              domain={['auto', 'auto']}
               label={{ value: 'CO₂ Emissions (g) - Lower is Better', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip 
-              content={({ active, payload }) => {
-                if (active && payload && payload.length > 0) {
-                  const data = payload[0].payload;
-                  return (
-                    <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
-                      <p className="font-medium text-gray-900">{data.name}</p>
-                      <p className="text-sm text-gray-600">
-                        <span className="text-blue-600">Cost:</span> ${data.cost.toFixed(1)}μ
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <span className="text-red-600">CO₂:</span> {data.co2}g
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
             />
             <Legend 
               verticalAlign="top" 
               height={36}
               iconType="circle"
+              content={() => (
+                <div className="flex justify-center gap-4 mb-2">
+                  {chartData.map(d => (
+                    <div key={d.name} className="flex items-center gap-1">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: colorMap[d.name] || '#6B7280' }}
+                      />
+                      <span className="text-sm text-gray-700">{d.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             />
-            {chartData.map((entry, index) => (
-              <Scatter 
-                key={entry.name}
-                name={entry.name}
-                data={[entry]} 
-                fill={index === 0 ? "#10B981" : index === 1 ? "#059669" : "#047857"} 
-              />
-            ))}
+            <Scatter name="Models" data={chartData}>
+              {chartData.map((entry) => (
+                <Cell key={entry.name} fill={colorMap[entry.name] || '#6B7280'} />
+              ))}
+            </Scatter>
+            <Tooltip 
+              cursor={{ strokeDasharray: '3 3' }}
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null;
+                const d = payload[0].payload; // Now this IS the hovered point
+                const modelName = d.name;
+                const color = colorMap[modelName] || '#6B7280';
+                const label = color === '#10B981' ? '🌱 Most Eco-Friendly' : 
+                              color === '#EF4444' ? '⚠️ Least Eco-Friendly' : 
+                              '⚡ Moderate';
+                return (
+                  <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+                    <p className="font-medium text-gray-900">{modelName}</p>
+                    <p className="text-xs font-semibold mb-1" style={{ color }}>{label}</p>
+                    <p className="text-sm text-gray-600">
+                      <span className="text-blue-600">Cost:</span> ${d.cost.toFixed(1)}μ
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="text-red-600">CO₂:</span> {d.co2}g
+                    </p>
+                  </div>
+                );
+              }}
+            />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
 
       {/* Multi-dimensional Radar Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">🕸️ Multi-Dimensional Performance</h3>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">🕸️ Multi-Dimensional Performance</h3>
+          <div className="text-xs bg-gray-50 p-3 rounded-lg border border-gray-200 max-w-xs">
+            <p className="font-semibold text-gray-700 mb-2">📊 Dimension Guide:</p>
+            <div className="space-y-1">
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#FF6B6B'}}>Speed:</span> Lower latency = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#3B82F6'}}>Cost Efficiency:</span> Lower cost = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#EC4899'}}>Green Score:</span> Lower CO₂ = Higher score</p>
+            </div>
+            <p className="text-gray-500 mt-2 italic">Higher values = Better performance</p>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={400}>
           <RadarChart data={radarData}>
             <PolarGrid />
             <PolarAngleAxis dataKey="model" />
-            <PolarRadiusAxis domain={[0, 100]} tickCount={5} />
+            <PolarRadiusAxis domain={[0, 100]} tickCount={6} />
             <Radar
               name="Speed"
               dataKey="Speed"
-              stroke="#10B981"
-              fill="#10B981"
+              stroke="#FF6B6B"
+              fill="#FF6B6B"
               fillOpacity={0.1}
               strokeWidth={2}
             />
             <Radar
               name="Cost Efficiency"
               dataKey="Cost Efficiency"
-              stroke="#F59E0B"
-              fill="#F59E0B"
+              stroke="#3B82F6"
+              fill="#3B82F6"
               fillOpacity={0.1}
               strokeWidth={2}
             />
             <Radar
               name="Green Score"
               dataKey="Green Score"
-              stroke="#EF4444"
-              fill="#EF4444"
+              stroke="#EC4899"
+              fill="#EC4899"
               fillOpacity={0.1}
               strokeWidth={2}
             />
@@ -185,7 +224,11 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               <XAxis dataKey="name" />
               <YAxis domain={[0, 'dataMax + 50']} />
               <Tooltip formatter={(value) => [`${value} tokens`, 'Response Length']} />
-              <Bar dataKey="tokens" fill="#059669" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="tokens" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colorMap[entry.name] || '#6B7280'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -199,7 +242,11 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip formatter={(value) => [`${value}ms`, 'Latency']} />
-              <Bar dataKey="latency" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="latency" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colorMap[entry.name] || '#6B7280'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -213,7 +260,11 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip formatter={(value) => [`$${(Number(value)/1000000).toFixed(6)}`, 'Cost per inference']} />
-              <Bar dataKey="cost" fill="#10B981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colorMap[entry.name] || '#6B7280'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -232,8 +283,16 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
                   name === 'co2' ? 'CO₂ Emissions' : 'Energy Usage'
                 ]}
               />
-              <Bar dataKey="co2" fill="#DC2626" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="energy" fill="#059669" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="co2" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colorMap[entry.name] || '#6B7280'} />
+                ))}
+              </Bar>
+              <Bar dataKey="energy" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colorMap[entry.name] || '#6B7280'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -290,11 +349,13 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
             <div className="space-y-1 text-sm">
               {results.map((result, index) => {
-                const ledMinutes = ((result.energy_wh || 0) / 0.01 * 60).toFixed(1); // LED bulb equivalent
+                // LED bulb: ~10W, so 0.01 Wh per 0.1 minutes (6 seconds)
+                // Formula: Wh / 10W * 60 min/hr = minutes of LED bulb runtime
+                const ledMinutes = ((result.energy_wh || 0) * 6).toFixed(1); // 10W LED: Wh * 6 = minutes
                 return (
                   <div key={index} className="flex justify-between">
                     <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>
-                    <span className="text-green-700">≈ {ledMinutes}min LED bulb</span>
+                    <span className="text-green-700">≈ {ledMinutes}min LED bulb (10W)</span>
                   </div>
                 );
               })}
@@ -305,7 +366,9 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <h4 className="font-medium text-gray-900 mb-2">🌍 Carbon Footprint</h4>
             <div className="space-y-1 text-sm">
               {results.map((result, index) => {
-                const carMeters = ((result.co2_g || 0) / 120 * 1000).toFixed(1); // Car driving equivalent (120g CO2/km)
+                // Average car: 120g CO₂/km = 0.12g CO₂/meter
+                // Formula: g CO₂ / 0.12 = meters driven
+                const carMeters = ((result.co2_g || 0) / 0.12).toFixed(1); // Car driving equivalent
                 return (
                   <div key={index} className="flex justify-between">
                     <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>

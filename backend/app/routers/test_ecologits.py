@@ -34,9 +34,6 @@ class EcoLogitsTestResponse(BaseModel):
 async def test_ecologits_endpoint(request: EcoLogitsTestRequest):
     """
     Test EcoLogits integration with detailed logging.
-    
-    This endpoint will log every single step of the EcoLogits workflow
-    so you can see exactly what's happening in the console/logs.
     """
     
     logger = logging.getLogger("benchmind.ecologits")

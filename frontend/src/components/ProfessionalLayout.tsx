@@ -6,9 +6,7 @@ import React, { useState } from 'react';
 import AIConsultant from './AIConsultant';
 import { ModelResult } from '../api/benchmind';
 
-interface ProfessionalLayoutProps {
-  // Add props as needed
-}
+interface ProfessionalLayoutProps {}
 
 export const ProfessionalLayout: React.FC<ProfessionalLayoutProps> = () => {
   const [benchmarkHistory] = useState<Array<{
