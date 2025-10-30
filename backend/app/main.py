@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -63,8 +63,11 @@ def create_app() -> FastAPI:
     
     # Include routers
     from .routers import models, consultant, test_ecologits, auth, user
+    from .routers import settings as settings_router
     app.include_router(auth.router)
     app.include_router(user.router)
+    app.include_router(user.profile_router)
+    app.include_router(settings_router.router)
     app.include_router(models.router)
     app.include_router(consultant.router)
     app.include_router(test_ecologits.router)

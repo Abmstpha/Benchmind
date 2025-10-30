@@ -1,9 +1,10 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LandingPage from './components/LandingPage'
 import ProfessionalLayout from './components/ProfessionalLayout'
 import './styles/modern.css'
 
-function AppContent() {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
@@ -18,16 +19,28 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <LandingPage />
+    return <Navigate to="/login" replace />
   }
 
-  return <ProfessionalLayout />
+  return <>{children}</>
 }
 
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LandingPage />} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <ProfessionalLayout />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
     </AuthProvider>
   )
 }

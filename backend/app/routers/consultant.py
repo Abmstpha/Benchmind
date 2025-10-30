@@ -6,7 +6,8 @@ import logging
 import asyncio
 from typing import Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
@@ -17,6 +18,9 @@ from ..agents.adk_green_agent import create_consultant_agent
 from ..schemas.requests import AIConsultantRequest
 from ..schemas.responses import AIConsultantResponse
 from ..core.config import settings
+from ..db.database import get_db
+from ..db.models import Profile
+from ..routers.user import get_current_user
 
 router = APIRouter(prefix="/ai-consultant", tags=["ai-consultant"])
 
@@ -37,13 +41,36 @@ except Exception as e:
 
 
 @router.post("/", response_model=AIConsultantResponse)
-async def get_ai_recommendation(request: AIConsultantRequest):
+async def get_ai_recommendation(
+    request: AIConsultantRequest,
+    token_data: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get intelligent AI model recommendation using PARALLEL agents - benchmarking + search!
     
     CRITICAL: Both agents run INDEPENDENTLY in parallel to avoid conflicts.
+    Requires authentication and deducts 1 credit per request.
     """
     
+    # Get user profile and check credits
+    user_email = token_data.get("sub")
+    profile = db.query(Profile).filter(Profile.email == user_email).first()
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    if profile.credits < 1:
+        raise HTTPException(
+            status_code=402,
+            detail="Insufficient credits. You need at least 1 credit to make a consultation request."
+        )
+    
+    # Deduct 1 credit
+    profile.credits -= 1
+    db.commit()
+    
     consultant_logger.info("🚀 DIRECT REACT AGENT REQUEST STARTED")
+    consultant_logger.info(f"👤 User: {user_email} (Credits remaining: {profile.credits})")
     consultant_logger.info(f"📋 Task: {request.task_description}")
     consultant_logger.info(f"🤖 Selected models: {request.selected_models}")
     consultant_logger.info(f"📝 User context: {request.user_context}")

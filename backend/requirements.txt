@@ -17,10 +17,12 @@ cloudpickle==3.1.1
 cryptography==46.0.3
 dataclasses-json==0.6.7
 distro==1.9.0
+dnspython==2.8.0
 docstring_parser==0.17.0
 duckduckgo_search==8.1.1
 ecdsa==0.19.1
 ecologits==0.8.2
+email-validator==2.3.0
 fastapi==0.120.1
 fastuuid==0.14.0
 filelock==3.20.0

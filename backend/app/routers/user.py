@@ -30,10 +30,12 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
         )
 
 router = APIRouter(prefix="/user", tags=["user"])
+profile_router = APIRouter(prefix="/profile", tags=["profile"])
 
 
 class UserStatusResponse(BaseModel):
     email: str
+    name: str | None = None
     credits: int
 
 
@@ -55,5 +57,29 @@ def get_user_status(
     
     return UserStatusResponse(
         email=profile.email,
+        name=profile.name,
+        credits=profile.credits
+    )
+
+
+@profile_router.get("", response_model=UserStatusResponse)
+def get_profile(
+    token_data: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user profile information"""
+    user_email = token_data.get("sub")
+    
+    # Get profile
+    profile = db.query(Profile).filter(Profile.email == user_email).first()
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found"
+        )
+    
+    return UserStatusResponse(
+        email=profile.email,
+        name=profile.name,
         credits=profile.credits
     )

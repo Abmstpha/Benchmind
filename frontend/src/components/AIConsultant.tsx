@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
+import { useAuth } from '../contexts/AuthContext';
 
 // Format markdown text with enhanced bullet point styling
 const FormattedRecommendation: React.FC<{ text: string }> = ({ text }) => {
@@ -73,6 +74,8 @@ interface AIRecommendation {
 }
 
 export const AIConsultant: React.FC<AIConsultantProps> = () => {
+  const { user } = useAuth();
+  const [credits, setCredits] = useState<number>(0);
   const [taskDescription, setTaskDescription] = useState('');
   const [userContext, setUserContext] = useState('');
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
@@ -93,6 +96,25 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
     "I need to build a multilingual translation API for my global app",
     "I want to create an AI-powered search and Q&A system for my knowledge base"
   ];
+
+  // Fetch user credits
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/user/status', {
+          headers: { 'Authorization': `Bearer ${user?.token}` }
+        });
+        const data = await response.json();
+        setCredits(data.credits || 0);
+      } catch (err) {
+        console.error('Failed to fetch credits:', err);
+      }
+    };
+    
+    if (user?.token) {
+      fetchCredits();
+    }
+  }, [user]);
 
   // Fetch available models on component mount
   useEffect(() => {
@@ -301,12 +323,27 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
         </div>
       </div>
 
+      {/* Credit Warning */}
+      {credits === 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-red-800">Insufficient Credits</p>
+              <p className="text-sm text-red-700">You need at least 1 credit to use the AI Consultant. Please contact support to add credits.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Get Recommendation Button */}
       <button
         onClick={getAIRecommendation}
-        disabled={isLoading || !taskDescription.trim() || selectedModels.length === 0}
+        disabled={isLoading || !taskDescription.trim() || selectedModels.length === 0 || credits === 0}
         className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-          isLoading || !taskDescription.trim() || selectedModels.length === 0
+          isLoading || !taskDescription.trim() || selectedModels.length === 0 || credits === 0
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'bg-green-600 text-white hover:bg-green-700'
         }`}
@@ -317,7 +354,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
             AI is benchmarking models & measuring environmental impact... (this may take 1-2 minutes)
           </div>
         ) : (
-          '🌱 See greenest models'
+          `🌱 Get AI Recommendation (${credits} credit${credits !== 1 ? 's' : ''} remaining)`
         )}
       </button>
 
