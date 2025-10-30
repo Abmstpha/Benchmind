@@ -20,7 +20,6 @@ from ..core.config import settings
 
 router = APIRouter(prefix="/ai-consultant", tags=["ai-consultant"])
 
-# Set up logging
 consultant_logger = logging.getLogger("benchmind.consultant")
 consultant_logger.setLevel(logging.DEBUG)
 if not consultant_logger.handlers:
@@ -29,7 +28,6 @@ if not consultant_logger.handlers:
     handler.setFormatter(formatter)
     consultant_logger.addHandler(handler)
 
-# Initialize the ReAct agent ONCE
 react_agent = None
 try:
     react_agent = create_consultant_agent(settings.default_gemini_model)
@@ -55,10 +53,7 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         raise HTTPException(status_code=500, detail="AI Consultant not available")
     
     try:
-        # Prepare the prompt for ReAct agent
         consultant_logger.info("🔧 Preparing ReAct agent prompt...")
-        
-        # Build prompt - agent will use Google ADK Search sub-agent for quality data
         prompt_parts = [request.task_description]
         if request.user_context:
             prompt_parts.append(f"Additional context: {request.user_context}")
@@ -69,34 +64,27 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         
         consultant_logger.info("🧠 Invoking ADK ReAct agent using Runner...")
         
-        # NOTE: Main agent uses GEMINI_API_KEY (set in adk_green_agent.py)
-        # Search sub-agent uses GOOGLE_API_KEY (set in adk_search_agent.py)
+        # NOTE: Main agent uses GEMINI_API_KEY, search sub-agent uses GOOGLE_API_KEY
         # This separation prevents rate limit conflicts
-        
-        # Create session service and session (following official ADK pattern)
         session_service = InMemorySessionService()
         session = await session_service.create_session(
             user_id="benchmind-user",
             app_name="benchmind"
         )
         
-        # Create Runner with the agent
         runner = Runner(
             agent=react_agent, 
             session_service=session_service,
             app_name="benchmind"
         )
         
-        # Create RunConfig for streaming
         run_config = RunConfig(streaming_mode=StreamingMode.SSE)
         
-        # Create message object for ADK
         message = types.Content(
             role='user',
             parts=[types.Part.from_text(text=full_prompt)]
         )
         
-        # Call ADK agent via Runner - iterate over events
         consultant_logger.info("🔄 Starting Runner.run() iteration...")
         
         final_response = None
@@ -114,7 +102,6 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                 consultant_logger.info(f"📦 Event #{event_count} received - type: {type(event).__name__}")
                 all_events.append(event)
                 
-                # Extract content from EACH event (not just the last one)
                 if hasattr(event, 'content') and event.content:
                     if hasattr(event.content, 'parts') and event.content.parts:
                         for i, part in enumerate(event.content.parts):
@@ -124,11 +111,9 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                                 final_response += part.text
                                 consultant_logger.info(f"✅ Event #{event_count} - Extracted text: {part.text[:100]}...")
                 
-                # Check for errors
                 if hasattr(event, 'error_code') and event.error_code and event.error_code != 'OK':
                     consultant_logger.warning(f"⚠️ Event #{event_count} has error: {event.error_code} - {getattr(event, 'error_message', 'No message')}")
             
-            # Log final event details for debugging
             if all_events:
                 last_event = all_events[-1]
                 consultant_logger.info(f"📦 Last event attributes: {dir(last_event)}")
@@ -140,9 +125,7 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         except Exception as agent_error:
             consultant_logger.error(f"❌ AGENT EVENT LOOP FAILED: {type(agent_error).__name__}: {agent_error}")
             consultant_logger.exception("Full agent error traceback:")
-            # Continue execution - we'll use fallback data
         
-        # Log final response status
         if final_response:
             consultant_logger.info(f"✅ Final response extracted: {len(final_response)} chars")
             consultant_logger.info(f"📝 First 200 chars: {final_response[:200]}...")
@@ -157,7 +140,6 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         consultant_logger.info(f"📝 Recommendation length: {len(recommendation)} chars")
         consultant_logger.info(f"📊 Total events received: {len(all_events)}")
         
-        # ========== RUN BOTH AGENTS IN PARALLEL ==========
         consultant_logger.warning("🚀 STARTING PARALLEL AGENT EXECUTION...")
         
         async def run_search_agent():
@@ -165,7 +147,6 @@ async def get_ai_recommendation(request: AIConsultantRequest):
             consultant_logger.warning("🔍 [SEARCH AGENT] Starting...")
             try:
                 from ..agents.adk_search_agent import search_model_benchmarks
-                # Run in thread pool to avoid blocking
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(None, search_model_benchmarks, request.selected_models)
                 consultant_logger.info(f"✅ [SEARCH AGENT] Completed: {len(result) if result else 0} chars")
@@ -185,7 +166,6 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                 task_desc = f"Benchmarking for: {request.task_description}"
                 test_prompt = f"Analyze this text: {request.task_description}"
                 
-                # Run in thread pool to avoid blocking
                 loop = asyncio.get_event_loop()
                 tool_result = await loop.run_in_executor(
                     None,
@@ -207,7 +187,6 @@ async def get_ai_recommendation(request: AIConsultantRequest):
                 consultant_logger.error(f"❌ [BENCHMARK AGENT] FAILED: {e}")
                 return []
         
-        # Execute both agents in parallel
         web_insights, benchmark_results = await asyncio.gather(
             run_search_agent(),
             run_benchmarking_agent(),
@@ -218,10 +197,8 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         consultant_logger.info(f"📊 Benchmark results: {len(benchmark_results)} models")
         consultant_logger.info(f"🔍 Search insights: {len(web_insights)} chars")
                 
-        # Fallback if benchmarking failed
         if not benchmark_results:
             consultant_logger.warning("⚠️ No benchmark results, using fallback")
-            # Final fallback - extract from recommendation text
             consultant_logger.warning("⚠️ Using fallback data extraction from recommendation text")
             import re
             cost_match = re.search(r'\$([0-9.]+)', recommendation)
@@ -243,17 +220,12 @@ async def get_ai_recommendation(request: AIConsultantRequest):
         
         consultant_logger.info("🎉 DIRECT REACT AGENT REQUEST COMPLETED")
         
-        # CRITICAL: 
         if recommendation:
-            # Split by common section headers to detect duplication
             sections = recommendation.split("SECTION 1:")
-            if len(sections) > 2:  # If we have more than one "SECTION 1:", it's duplicated
-                # Keep only the first occurrence
+            if len(sections) > 2:
                 recommendation = "SECTION 1:" + sections[1]
                 consultant_logger.warning(f"⚠️ REMOVED DUPLICATION - kept first occurrence only")
         
-        # web_insights is already set by the forced web search call above
-        # If it wasn't set (no direct tool call), initialize it
         if 'web_insights' not in locals():
             web_insights = None
             consultant_logger.warning("⚠️ web_insights not set - web search may not have run")

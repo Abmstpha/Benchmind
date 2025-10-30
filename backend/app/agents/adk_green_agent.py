@@ -17,36 +17,30 @@ def create_consultant_agent(model_name: str) -> LlmAgent:
     import logging
     logger = logging.getLogger("benchmind.agent")
     
-    # 1. Check for API key
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
     
-    # 2. Create Gemini model instance with API key
     # CRITICAL: Set response_modalities to force text generation after tool calls
     llm = Gemini(
         model_name=model_name,
         api_key=settings.gemini_api_key,
         temperature=0.1,
         generation_config={
-            "response_modalities": ["TEXT"],  # Force text response
+            "response_modalities": ["TEXT"],
             "candidate_count": 1,
         }
     )
     
-    # 3. Create Google Search sub-agent with rate limiting
     logger.info("🔧 Creating Google ADK Search sub-agent...")
-    # RE-ENABLED: Search runs independently, won't crash main agent
     google_search_agent = create_google_search_agent(enable_search=True)
     
     if google_search_agent is None:
         logger.warning("⚠️ Google Search sub-agent disabled - skipping search tool")
         search_tool = None
     else:
-        # Wrap sub-agent in AgentTool
         search_tool = AgentTool(agent=google_search_agent)
         logger.info("✅ Google ADK Search sub-agent created successfully")
     
-    # 4. Define the tools list
     # NOTE: Search runs independently, not as a tool in main agent
     tools = [
         benchmark_models_for_task, 
@@ -60,8 +54,6 @@ def create_consultant_agent(model_name: str) -> LlmAgent:
         else:
             logger.info(f"   - {type(tool).__name__}")
     
-    # 4. Define the comprehensive prompt
-    # This entire prompt string is used as the 'instruction' for the LlmAgent
     prompt = ("""
 You are **Benchmind** – a hyper-specialized AI Model Efficiency and Governance Strategist. You are not a general-purpose assistant. You are a precision instrument for Chief Technology Officers (CTOs), Engineering Leaders, and FinOps/GreenOps (ESG) stakeholders.
 

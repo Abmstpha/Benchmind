@@ -20,7 +20,6 @@ from ..core.config import settings
 
 logger = logging.getLogger("benchmind.google_search_agent")
 
-# Simple in-memory cache for search results (TTL: 1 hour)
 _search_cache = {}
 _cache_timestamps = {}
 
@@ -45,7 +44,6 @@ def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]
     logger.info("🔧 Creating Google Search sub-agent...")
     
     # CRITICAL: ADK expects GOOGLE_API_KEY environment variable
-    # Use separate GOOGLE_API_KEY for search sub-agent to avoid rate limits
     if not os.environ.get("GOOGLE_API_KEY"):
         if settings.google_api_key:
             os.environ["GOOGLE_API_KEY"] = settings.google_api_key
@@ -58,7 +56,6 @@ def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]
             return None
     
     try:
-        # Use Gemini 1.5 models which support google_search
         llm = Gemini(
             model_name="gemini-1.5-flash",
             temperature=0.1
@@ -137,7 +134,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
         String containing search results with benchmark data and URLs
     """
     
-    # === 1. CACHE CHECK ===
     cache_key = ",".join(sorted(model_names))
     if cache_key in _search_cache:
         cache_age = time.time() - _cache_timestamps.get(cache_key, 0)
@@ -149,7 +145,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
     
     logger.info(f"🔍 [Cache Miss] Starting independent search for {len(model_names)} models...")
     
-    # === 2. AGENT & RUNNER SETUP ===
     search_agent = create_google_search_agent(enable_search=True)
     if search_agent is None:
         logger.error("❌ Search agent unavailable")
@@ -163,7 +158,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
         logger.error(f"❌ Session setup failed: {e}")
         return f"Session setup failed: {e}"
     
-    # Build search query
     models_list = ", ".join(model_names)
     query = f"Search for MMLU benchmark scores, HumanEval results, and quality benchmarks for these AI models: {models_list}"
     
@@ -172,7 +166,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
         parts=[types.Part.from_text(text=query)]
     )
     
-    # === 3. RETRY LOOP ===
     max_retries = 3
     retry_delay_base = 2  # seconds
     
@@ -181,7 +174,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
             logger.info(f"🔎 Running search query (attempt {attempt + 1}/{max_retries})...")
             response_text = ""
             
-            # --- Start ADK Runner ---
             for event in runner.run(
                 new_message=message,
                 user_id='benchmind',
@@ -192,13 +184,9 @@ def search_model_benchmarks(model_names: list[str]) -> str:
                         for part in event.content.parts:
                             if hasattr(part, 'text') and part.text:
                                 response_text += part.text
-            # --- End ADK Runner ---
             
             logger.info(f"✅ Search completed - {len(response_text)} chars received")
 
-            # === 4. POST-PROCESSING & CLEANUP ===
-            
-            # --- URL Redirect Resolution ---
             redirect_pattern = r'https://vertexaisearch\.cloud\.google\.com/grounding-api-redirect/[A-Za-z0-9_-]+'
             redirect_urls = re.findall(redirect_pattern, response_text)
             
@@ -217,7 +205,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
                         logger.warning(f"⚠️ Failed to resolve {redirect_url[:80]}...: {e}")
                 logger.info("✅ URL resolution complete")
             
-            # --- Remove Any Remaining Redirects ---
             remaining_redirects = re.findall(redirect_pattern, response_text)
             if remaining_redirects:
                 logger.warning(f"⚠️ Removing {len(remaining_redirects)} unresolved redirect URLs")
@@ -225,11 +212,9 @@ def search_model_benchmarks(model_names: list[str]) -> str:
                     response_text = re.sub(r'\s*\*\s+' + re.escape(unresolved_url) + r'[^\n]*\n?', '', response_text)
                 logger.info("🧹 Removed all vertexaisearch URLs from output")
 
-            # --- Clean URL Formatting Artifacts ---
             response_text = re.sub(r'(https?://[^\s]+?)(=+)(\s|$)', r'\1\3', response_text)
             logger.info("🧹 Cleaned up URL formatting artifacts")
 
-            # --- Save Debug File ---
             try:
                 debug_file = "/tmp/search_agent_output.txt"
                 with open(debug_file, "w") as f:
@@ -238,7 +223,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
             except Exception as e:
                 logger.warning(f"⚠️ Could not write debug file: {e}")
 
-            # === 5. CACHE & RETURN SUCCESS ===
             if response_text:
                 logger.info(f"💾 Caching successful result for key: {cache_key}")
                 _search_cache[cache_key] = response_text
@@ -250,7 +234,6 @@ def search_model_benchmarks(model_names: list[str]) -> str:
             
         except Exception as e:
             error_msg = str(e)
-            # --- Retry Logic for 503 Errors ---
             if "503" in error_msg or "overloaded" in error_msg.lower():
                 if attempt < max_retries - 1:
                     wait_time = retry_delay_base * (2 ** attempt)  # Exponential backoff: 2s, 4s
@@ -261,13 +244,10 @@ def search_model_benchmarks(model_names: list[str]) -> str:
                     logger.error(f"❌ API still overloaded after {max_retries} attempts.")
                     return "No search results found (API temporarily unavailable)"
             else:
-                # Non-503 error, fail immediately
                 logger.error(f"❌ Search failed with non-retryable error: {type(e).__name__}: {e}")
                 return f"Search error: {e}"
     
-    # Should only be reached if all retries fail
     return "No search results found (API temporarily unavailable)"
 
 
-# Export for use in main agent
 __all__ = ['create_google_search_agent', 'search_model_benchmarks']

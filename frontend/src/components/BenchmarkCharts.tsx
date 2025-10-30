@@ -46,32 +46,28 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     );
   }
   
-  // Transform data for different chart types
   const chartData = results.map(result => ({
-    name: result.model || result.model_id || 'Unknown', // Keep original model names
+    name: result.model || result.model_id || 'Unknown',
     latency: Math.round(result.latency_ms || 0),
-    cost: (result.cost_usd || 0) * 1000000, // Convert to micro-dollars for better display
+    cost: (result.cost_usd || 0) * 1000000,
     co2: Math.round((result.co2_g || 0) * 100) / 100,
     energy: Math.round((result.energy_wh || 0) * 100) / 100,
     tokens: result.tokens_used || 0
   }));
   
-  // Calculate greenness score (lower CO2 + lower cost = greener)
   const dataWithScores = chartData.map(d => ({
     ...d,
-    greenScore: d.co2 + (d.cost / 100) // Weighted score
+    greenScore: d.co2 + (d.cost / 100)
   }));
   
-  // Sort by greenness and assign colors
   const sortedByGreen = [...dataWithScores].sort((a, b) => a.greenScore - b.greenScore);
   const colorMap: { [key: string]: string } = {};
   sortedByGreen.forEach((item, idx) => {
-    if (idx === 0) colorMap[item.name] = '#10B981'; // Green - most eco-friendly
-    else if (idx === sortedByGreen.length - 1) colorMap[item.name] = '#EF4444'; // Red - least eco-friendly
-    else colorMap[item.name] = '#F59E0B'; // Yellow - middle
+    if (idx === 0) colorMap[item.name] = '#10B981';
+    else if (idx === sortedByGreen.length - 1) colorMap[item.name] = '#EF4444';
+    else colorMap[item.name] = '#F59E0B';
   });
 
-  // Radar chart data (normalized to 10-100 scale to ensure visibility)
   const radarData = results.map(result => {
     const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
     const minLatency = Math.min(...results.map(r => r.latency_ms || 0));
@@ -80,10 +76,9 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
     const minCO2 = Math.min(...results.map(r => r.co2_g || 0));
     
-    // Normalize to 10-100 range (10 = worst, 100 = best) to ensure all models are visible
     const normalizeInverted = (value: number, min: number, max: number) => {
-      if (max === min) return 100; // All same = perfect score
-      // Invert: lower values get higher scores (10-100 range)
+      if (max === min) return 100;
+      // Normalize to 10-100 range: lower values get higher scores
       return Math.round(10 + (1 - (value - min) / (max - min)) * 90);
     };
     
