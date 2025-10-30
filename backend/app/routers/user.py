@@ -7,8 +7,8 @@ from ..utils.auth_utils import verify_token
 from pydantic import BaseModel
 
 
-def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
-    """Extract and verify bearer token."""
+def get_current_user_token(authorization: Optional[str] = Header(None)) -> dict:
+    """Extract and verify bearer token - returns token data."""
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -29,6 +29,29 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             detail=f"Invalid token: {str(e)}"
         )
 
+
+def get_current_user(
+    token_data: dict = Depends(get_current_user_token),
+    db: Session = Depends(get_db)
+) -> Profile:
+    """Get current user Profile object from token."""
+    user_email = token_data.get("sub")
+    if not user_email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+    
+    # Get profile from database
+    profile = db.query(Profile).filter(Profile.email == user_email).first()
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
+    
+    return profile
+
 router = APIRouter(prefix="/user", tags=["user"])
 profile_router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -41,20 +64,9 @@ class UserStatusResponse(BaseModel):
 
 @router.get("/status", response_model=UserStatusResponse)
 def get_user_status(
-    token_data: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    profile: Profile = Depends(get_current_user)
 ):
     """Get current user's profile status"""
-    user_email = token_data.get("sub")
-    
-    # Get profile
-    profile = db.query(Profile).filter(Profile.email == user_email).first()
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found"
-        )
-    
     return UserStatusResponse(
         email=profile.email,
         name=profile.name,
@@ -64,20 +76,9 @@ def get_user_status(
 
 @profile_router.get("", response_model=UserStatusResponse)
 def get_profile(
-    token_data: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    profile: Profile = Depends(get_current_user)
 ):
     """Get user profile information"""
-    user_email = token_data.get("sub")
-    
-    # Get profile
-    profile = db.query(Profile).filter(Profile.email == user_email).first()
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found"
-        )
-    
     return UserStatusResponse(
         email=profile.email,
         name=profile.name,

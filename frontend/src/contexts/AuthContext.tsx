@@ -52,9 +52,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token: data.access_token,
       };
 
+      console.log('✅ Login successful, setting user:', userData);
       setUser(userData);
       localStorage.setItem('benchmind_token', data.access_token);
       localStorage.setItem('benchmind_user', JSON.stringify(userData));
+      console.log('✅ User state updated, isAuthenticated should be true');
     } catch (error) {
       console.error('Login error:', error);
       throw error;

@@ -6,6 +6,8 @@ import './styles/modern.css'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
+  
+  console.log('🔒 ProtectedRoute check:', { isAuthenticated, isLoading });
 
   if (isLoading) {
     return (
@@ -25,12 +27,45 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth()
+  
+  console.log('🌐 PublicRoute check:', { isAuthenticated, isLoading });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading Benchmind...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    console.log('✅ User is authenticated, redirecting to home');
+    return <Navigate to="/home" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/login" element={<LandingPage />} />
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } 
+          />
+          
+          {/* All routes inside ProfessionalLayout */}
           <Route
             path="/*"
             element={
