@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     mistral_api_key: str = ""
     gemini_api_key: str = ""  # For main agent
     google_api_key: str = ""  # For search sub-agent
+
+    # Database Configuration
+    database_url: str = ""
+    
+    # JWT Authentication
+    jwt_secret: str = ""
+    jwt_exp_seconds: int = 345600  # 4 days
+    
+    # Email Configuration
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = "noreply@benchmind.ai"
     
     # Model Configuration
     default_gemini_model: str = "models/gemini-2.5-flash"

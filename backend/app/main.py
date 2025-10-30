@@ -62,7 +62,9 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, general_exception_handler)
     
     # Include routers
-    from .routers import models, consultant, test_ecologits
+    from .routers import models, consultant, test_ecologits, auth, user
+    app.include_router(auth.router)
+    app.include_router(user.router)
     app.include_router(models.router)
     app.include_router(consultant.router)
     app.include_router(test_ecologits.router)
@@ -76,6 +78,9 @@ def create_app() -> FastAPI:
             "version": settings.app_version,
             "status": "running",
             "endpoints": {
+                "auth_signup": "/auth/signup",
+                "auth_login": "/auth/login",
+                "user_status": "/user/status",
                 "models": "/models",
                 "ai_consultant": "/ai-consultant",
                 "test_ecologits_get": "/test/ecologits-simple",
