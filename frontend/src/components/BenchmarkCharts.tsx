@@ -165,7 +165,18 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
 
       {/* Multi-dimensional Radar Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">🕸️ Multi-Dimensional Performance</h3>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">🕸️ Multi-Dimensional Performance</h3>
+          <div className="text-xs bg-gray-50 p-3 rounded-lg border border-gray-200 max-w-xs">
+            <p className="font-semibold text-gray-700 mb-2">📊 Dimension Guide:</p>
+            <div className="space-y-1">
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#FF6B6B'}}>Speed:</span> Lower latency = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#3B82F6'}}>Cost Efficiency:</span> Lower cost = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#EC4899'}}>Green Score:</span> Lower CO₂ = Higher score</p>
+            </div>
+            <p className="text-gray-500 mt-2 italic">Higher values = Better performance</p>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={400}>
           <RadarChart data={radarData}>
             <PolarGrid />
@@ -174,24 +185,24 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <Radar
               name="Speed"
               dataKey="Speed"
-              stroke="#10B981"
-              fill="#10B981"
+              stroke="#FF6B6B"
+              fill="#FF6B6B"
               fillOpacity={0.1}
               strokeWidth={2}
             />
             <Radar
               name="Cost Efficiency"
               dataKey="Cost Efficiency"
-              stroke="#F59E0B"
-              fill="#F59E0B"
+              stroke="#3B82F6"
+              fill="#3B82F6"
               fillOpacity={0.1}
               strokeWidth={2}
             />
             <Radar
               name="Green Score"
               dataKey="Green Score"
-              stroke="#EF4444"
-              fill="#EF4444"
+              stroke="#EC4899"
+              fill="#EC4899"
               fillOpacity={0.1}
               strokeWidth={2}
             />

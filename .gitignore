@@ -58,7 +58,6 @@ test_dynamic_fetch.py
 test_search_function.py
 test_subagent_standalone.py
 test_google_search.py
-test_ecologits.py
 
 # Jupyter
 .ipynb_checkpoints/
