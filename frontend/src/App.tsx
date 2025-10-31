@@ -48,6 +48,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/home" replace />
   }
 
+  console.log('🌐 User not authenticated, showing login page');
   return <>{children}</>
 }
 
@@ -56,6 +57,16 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Root redirect */}
+          <Route 
+            path="/" 
+            element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } 
+          />
+          
           <Route 
             path="/login" 
             element={

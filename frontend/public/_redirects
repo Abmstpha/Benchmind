@@ -1,0 +1,7 @@
+# Netlify redirects for SPA routing
+# All routes should serve index.html for client-side routing
+/*    /index.html   200
+
+# Redirect root to login if not authenticated (handled by React Router)
+# API calls should go to backend
+/api/*  https://your-backend-url.com/api/:splat  200
