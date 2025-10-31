@@ -35,7 +35,6 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({ currentStep, p
         {STEPS.map((step, index) => {
           const isActive = step.id === currentStep;
           const isCompleted = index < currentStepIndex;
-          const isPending = index > currentStepIndex;
 
           return (
             <div
