@@ -12,17 +12,25 @@ if not SQLALCHEMY_DATABASE_URL:
 
 print(f"🔍 Setting up database engine: {SQLALCHEMY_DATABASE_URL[:50]}...")
 
-# Create engine with connection timeout and retry settings - but don't test connection yet
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    pool_timeout=30,
-    pool_recycle=3600,
-    pool_pre_ping=True,  # Verify connections before use
-    connect_args={
-        "connect_timeout": 30,
-        "application_name": "benchmind_backend"
-    }
-)
+# Configure engine based on database type
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+    # Production PostgreSQL configuration
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_timeout=30,
+        pool_recycle=3600,
+        pool_pre_ping=True,
+        connect_args={
+            "connect_timeout": 30,
+            "application_name": "benchmind_backend"
+        }
+    )
+else:
+    # Development SQLite configuration
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
 
 print(f"✅ Database engine configured (will connect on first use)")
 

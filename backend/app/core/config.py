@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # CORS Configuration
-    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://benchmind.vercel.app,https://benchmind-frontend.onrender.com"
+    
+    # Environment
+    environment: str = "development"
     
     @property
     def cors_origins_list(self) -> List[str]:
