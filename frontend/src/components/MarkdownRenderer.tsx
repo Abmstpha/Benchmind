@@ -1,7 +1,3 @@
-/**
- * Modern Markdown Renderer Component
- * Converts markdown text to beautifully formatted HTML with modern styling
- */
 
 import React from 'react';
 
@@ -12,12 +8,10 @@ interface MarkdownRendererProps {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text, className = "" }) => {
   const formatMarkdown = (text: string) => {
-    // First, protect URLs by replacing them with placeholders
     const urlPlaceholders: { [key: string]: string } = {};
     let urlCounter = 0;
     
     const textWithPlaceholders = text.replace(/(https?:\/\/[^\s<>\)\]\}\,\;]+)/g, (url) => {
-      // Clean up URLs that might have trailing punctuation or weird characters
       const cleanUrl = url.replace(/[^\w\-\.\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=\%]+$/, '');
       const placeholder = `__URL_PLACEHOLDER_${urlCounter}__`;
       urlPlaceholders[placeholder] = cleanUrl;
@@ -26,25 +20,19 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text, classN
     });
     
     const formatted = textWithPlaceholders
-      // Horizontal rules (---)
       .replace(/^---+$/gm, '<hr class="my-6 border-t-2 border-gray-200" />')
       
-      // ### Headers (e.g., "### mistral-tiny")
       .replace(/^###\s+(.+)$/gm, '<h3 class="text-lg font-bold text-gray-900 mt-6 mb-3 pb-2 border-b-2 border-green-200 flex items-center"><span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>$1</h3>')
       
-      // Section headers with modern styling
       .replace(/^\*\*([A-Z][^*:]+):\*\*$/gm, '<h3 class="text-lg font-bold text-gray-900 mt-6 mb-3 pb-2 border-b-2 border-blue-200 flex items-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm mr-2">📊</span>$1</h3>')
       
-      // Model names as headers (e.g., "**mistral-tiny:**")
       .replace(/^\*\*([a-z0-9-]+):\*\*$/gm, '<h4 class="text-base font-bold text-gray-900 mt-4 mb-2 pb-1 border-b border-gray-200 flex items-center"><span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>$1</h4>')
       
-      // **bold** to <strong> (process before italic) - but avoid URL placeholders
       .replace(/\*\*([^*]+)\*\*/g, (match, content) => {
         if (content.includes('__URL_PLACEHOLDER_')) return match;
         return `<strong class="font-semibold text-gray-900 bg-yellow-50 px-1 rounded">${content}</strong>`;
       })
       
-      // *italic* to <em> - but avoid URL placeholders
       .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (match, content) => {
         if (content.includes('__URL_PLACEHOLDER_')) return match;
         return `<em class="italic text-gray-700">${content}</em>`;

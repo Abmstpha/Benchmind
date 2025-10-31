@@ -1,7 +1,3 @@
-/**
- * Analytics Page - Shows graphs and data visualization
- */
-
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -62,7 +58,6 @@ export const AnalyticsPage: React.FC = () => {
         throw new Error('Failed to delete run');
       }
 
-      // Remove from local state
       setRuns(runs.filter(run => run.run_id !== runId));
       console.log('✅ Successfully deleted run:', runId);
     } catch (error) {
@@ -111,13 +106,11 @@ export const AnalyticsPage: React.FC = () => {
     fetchAllRuns();
   }, []);
 
-  // Auto-expand if coming from another page with expand=true
   useEffect(() => {
     const shouldExpand = searchParams.get('expand') === 'true';
     const runId = searchParams.get('run_id');
     
     if (shouldExpand && runId && runs.length > 0) {
-      // Find the run with matching ID and expand it
       const targetRun = runs.find(run => run.run_id === runId);
       if (targetRun) {
         setExpandedRun(runId);
@@ -147,7 +140,6 @@ export const AnalyticsPage: React.FC = () => {
     );
   }
 
-  // Comprehensive BenchmarkCharts component (inspired by old charts)
   const BenchmarkCharts = ({ results }: { results: any[] }) => {
     console.log('BenchmarkCharts received results:', results);
     
@@ -159,20 +151,18 @@ export const AnalyticsPage: React.FC = () => {
       );
     }
     
-    // Transform data for different chart types
     const chartData = results.map(result => ({
       name: (result.model_name || result.model_id || result.model || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
       latency: Math.round(result.latency_ms || 0),
-      cost: (result.cost_usd || 0) * 1000000, // Convert to micro-dollars for better display
-      co2: parseFloat(result.co2_g) || 0, // Ensure CO₂ values are numbers (e.g., 0.280)
-      energy: result.energy_wh || 0, // Keep original energy values
+      cost: (result.cost_usd || 0) * 1000000,
+      co2: parseFloat(result.co2_g) || 0,
+      energy: result.energy_wh || 0,
       tokens: result.tokens_used || 0
     }));
     
     console.log('Transformed chartData:', chartData);
     console.log('CO₂ values:', chartData.map(d => ({ name: d.name, co2: d.co2 })));
 
-    // Calculate efficiency scores for model-based coloring (lower is better for cost, latency, co2, energy)
     const modelsWithScores = chartData.map(model => {
       // Efficiency score: lower cost + lower co2 + lower latency + lower energy = better
       const efficiencyScore = model.cost + model.co2 * 1000 + model.latency + model.energy * 100;

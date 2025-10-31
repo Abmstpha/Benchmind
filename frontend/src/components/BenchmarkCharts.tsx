@@ -1,6 +1,3 @@
-/**
- * Benchmark Charts - Visual representation of AI model comparison results
- */
 
 import React from 'react';
 import {

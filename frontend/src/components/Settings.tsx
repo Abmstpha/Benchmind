@@ -16,7 +16,6 @@ const Settings: React.FC = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Load user profile
     const fetchProfile = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/user/status`, {
@@ -190,7 +189,6 @@ const Settings: React.FC = () => {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <h1 className="text-3xl font-bold text-gray-800">Settings</h1>
 
-      {/* Profile Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Profile Information</h2>
         
@@ -227,7 +225,6 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      {/* Email Change Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Change Email</h2>
         
@@ -286,7 +283,6 @@ const Settings: React.FC = () => {
         )}
       </div>
 
-      {/* Password Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Change Password</h2>
         
@@ -345,7 +341,6 @@ const Settings: React.FC = () => {
         )}
       </div>
 
-      {/* Messages */}
       {message && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
           {message}

@@ -57,7 +57,6 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Root redirect */}
           <Route 
             path="/" 
             element={
@@ -76,7 +75,6 @@ function App() {
             } 
           />
           
-          {/* All routes inside ProfessionalLayout */}
           <Route
             path="/*"
             element={

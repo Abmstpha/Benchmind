@@ -1,6 +1,3 @@
-/**
- * Progress Overlay - 7-step animated stepper
- */
 
 import React from 'react';
 

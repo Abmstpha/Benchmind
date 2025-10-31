@@ -1,6 +1,3 @@
-/**
- * Result Cards - Three cards that appear after completion
- */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -23,7 +20,6 @@ export const ResultCards: React.FC<ResultCardsProps> = ({ runId }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Efficiency Recommendation Card */}
         <Link
           to={`/efficiency?run_id=${runId}`}
           className="bg-white rounded-lg border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all p-6 group"

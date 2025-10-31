@@ -1,6 +1,3 @@
-/**
- * Benchmind Landing - Single card input with animated progress
- */
 
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
@@ -16,13 +13,11 @@ export const BenchmindLanding: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  // Advanced options
   const [maxTokens, setMaxTokens] = useState(256);
   const [temperature, setTemperature] = useState(0.2);
   const [gridFactor, setGridFactor] = useState(300);
   const [pue] = useState(1.2);
   
-  // State machine
   const [runState, setRunState] = useState<{
     kind: 'idle' | 'starting' | 'running' | 'done' | 'error';
     runId?: string;
@@ -31,7 +26,6 @@ export const BenchmindLanding: React.FC = () => {
     message?: string;
   }>({ kind: 'idle' });
 
-  // Fetch available models
   useEffect(() => {
     const fetchModels = async () => {
       try {

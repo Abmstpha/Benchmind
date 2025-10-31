@@ -1,5 +1,3 @@
-// API Configuration
-// Force production URL for Firebase deployment
 const API_BASE_URL = 'https://benchmind.onrender.com';
 
 console.log('🔧 API Configuration:', {

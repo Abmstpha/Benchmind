@@ -1,6 +1,3 @@
-/**
- * Professional Layout - Clean, enterprise-grade UI
- */
 
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';

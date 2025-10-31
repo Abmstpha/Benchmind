@@ -23,7 +23,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored token on mount
     const storedToken = localStorage.getItem('benchmind_token');
     const storedUser = localStorage.getItem('benchmind_user');
     
@@ -48,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       const userData = {
-        id: email, // Use email as ID for now
+        id: email,
         email: email,
         token: data.access_token,
       };
@@ -77,7 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(error.detail || 'Signup failed');
       }
 
-      // After signup, user needs to verify OTP before logging in
       return await response.json();
     } catch (error) {
       console.error('Signup error:', error);

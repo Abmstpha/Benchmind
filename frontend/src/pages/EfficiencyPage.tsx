@@ -1,7 +1,3 @@
-/**
- * Efficiency Page - Shows all user benchmark results
- */
-
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -44,7 +40,6 @@ export const EfficiencyPage: React.FC = () => {
         throw new Error('Failed to delete run');
       }
 
-      // Remove from local state
       setRuns(runs.filter(run => run.run_id !== runId));
       console.log('✅ Successfully deleted run:', runId);
     } catch (error) {
@@ -98,13 +93,11 @@ export const EfficiencyPage: React.FC = () => {
     fetchAllRuns();
   }, []);
 
-  // Auto-expand if coming from another page with expand=true
   useEffect(() => {
     const shouldExpand = searchParams.get('expand') === 'true';
     const runId = searchParams.get('run_id');
     
     if (shouldExpand && runId && runs.length > 0) {
-      // Find the run with matching ID and expand it
       const targetRun = runs.find(run => run.run_id === runId);
       if (targetRun) {
         setExpandedRun(runId);
@@ -151,7 +144,6 @@ export const EfficiencyPage: React.FC = () => {
 
   return (
     <div className="w-full h-full overflow-y-auto space-y-6 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Efficiency Recommendations</h1>
