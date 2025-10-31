@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # CORS Configuration
-    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://benchmind.vercel.app,https://benchmind-frontend.onrender.com,https://benchmind.netlify.app,http://benchmind.netlify.app"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://benchmind.vercel.app,https://benchmind-frontend.onrender.com,https://benchmind-app.web.app,https://benchmind-app.firebaseapp.com,https://benchmind.netlify.app,http://benchmind.netlify.app"
     
     # Environment
     environment: str = "development"
