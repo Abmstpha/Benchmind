@@ -322,9 +322,9 @@ Please benchmark these models and provide efficiency recommendations based on en
             job_store.update_step(run_id, 'show_results', StepStatus.DONE, 100)
             
             # Build final recommendation structure
-            # Get EcoLogits data from job_store results (this is where the real data is!)
-            job_results = job_store.get_results(run_id)
-            stored_benchmark_results = job_results.get('benchmark_results', []) if job_results else []
+            # Get EcoLogits data from job_store run object (this is where the real data is!)
+            current_run = job_store.get_run(run_id)
+            stored_benchmark_results = current_run.benchmark_results if current_run and current_run.benchmark_results else []
             
             # Try multiple sources for benchmark data
             final_benchmark_results = (
@@ -335,7 +335,7 @@ Please benchmark these models and provide efficiency recommendations based on en
             )
             
             logger.info(f"🔍 DEBUG BENCHMARK DATA SOURCES:")
-            logger.info(f"   job_store results: {len(stored_benchmark_results)} items")
+            logger.info(f"   job_store run.benchmark_results: {len(stored_benchmark_results)} items")
             logger.info(f"   benchmark_results['benchmark_results']: {len(benchmark_results.get('benchmark_results', []))} items")
             logger.info(f"   final_benchmark_results: {len(final_benchmark_results)} items")
             

@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 interface BenchmarkRun {
   run_id: string;
@@ -237,11 +238,15 @@ export const QualityPage: React.FC = () => {
                 <div className="border-t bg-gray-50 p-6">
                   {/* Quality Analysis Text */}
                   {run.quality_insights?.analysis_text && (
-                    <div className="bg-white rounded-lg border p-6 mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-4">Internet Research Analysis</h4>
-                      <div className="prose prose-sm max-w-none text-gray-700">
-                        <div className="whitespace-pre-wrap">{run.quality_insights.analysis_text}</div>
-                      </div>
+                    <div className="bg-white rounded-lg p-6 border mb-6 shadow-sm">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm mr-2">🤖</span>
+                        AI Quality Analysis
+                      </h4>
+                      <MarkdownRenderer 
+                        text={run.quality_insights.analysis_text} 
+                        className="text-gray-700"
+                      />
                     </div>
                   )}
                   

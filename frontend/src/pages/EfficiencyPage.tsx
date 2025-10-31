@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 interface BenchmarkRun {
   run_id: string;
@@ -320,11 +321,15 @@ export const EfficiencyPage: React.FC = () => {
 
                   {/* Agent Recommendation Text */}
                   {run.recommendation?.recommendation_text && (
-                    <div className="bg-white rounded-lg p-4 border mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-3">AI Efficiency Analysis</h4>
-                      <div className="prose prose-sm max-w-none text-gray-700">
-                        <div className="whitespace-pre-wrap">{run.recommendation.recommendation_text}</div>
-                      </div>
+                    <div className="bg-white rounded-lg p-6 border mb-6 shadow-sm">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm mr-2">🤖</span>
+                        AI Efficiency Analysis
+                      </h4>
+                      <MarkdownRenderer 
+                        text={run.recommendation.recommendation_text} 
+                        className="text-gray-700"
+                      />
                     </div>
                   )}
 
