@@ -12,7 +12,7 @@ from ..core.config import settings
 
 
 def create_consultant_agent(model_name: str) -> LlmAgent:
-    """Create ReAct agent with Google ADK for Benchmind AI Consultant."""
+    """Create ReAct agent """
     
     import logging
     logger = logging.getLogger("benchmind.agent")
@@ -20,7 +20,7 @@ def create_consultant_agent(model_name: str) -> LlmAgent:
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
     
-    # CRITICAL: Set response_modalities to force text generation after tool calls
+    #  force text generation after tool calls
     llm = Gemini(
         model_name=model_name,
         api_key=settings.gemini_api_key,
@@ -31,28 +31,19 @@ def create_consultant_agent(model_name: str) -> LlmAgent:
         }
     )
     
-    logger.info("🔧 Creating Google ADK Search sub-agent...")
     google_search_agent = create_google_search_agent(enable_search=True)
     
     if google_search_agent is None:
-        logger.warning("⚠️ Google Search sub-agent disabled - skipping search tool")
         search_tool = None
     else:
         search_tool = AgentTool(agent=google_search_agent)
-        logger.info("✅ Google ADK Search sub-agent created successfully")
     
-    # NOTE: Search runs independently, not as a tool in main agent
+    
     tools = [
         benchmark_models_for_task, 
         analyze_cost_efficiency
     ]
     
-    logger.info("📋 Registered tools:")
-    for tool in tools:
-        if hasattr(tool, '__name__'):
-            logger.info(f"   - {tool.__name__}")
-        else:
-            logger.info(f"   - {type(tool).__name__}")
     
     prompt = ("""
 You are **Benchmind** – a hyper-specialized AI Model Efficiency and Governance Strategist. You are not a general-purpose assistant. You are a precision instrument for Chief Technology Officers (CTOs), Engineering Leaders, and FinOps/GreenOps (ESG) stakeholders.
@@ -416,11 +407,10 @@ Remember: **evidence beats opinion**. If data is missing, design the smallest te
 """
     )
     
-    # 4. Create the ADK LlmAgent with explicit Gemini model
-    # This is the correct pattern for API key usage (not Vertex AI)
+
     agent = LlmAgent(
         name="benchmind_consultant",
-        model=llm,  # Pass the Gemini model instance with API key
+        model=llm,  
         instruction=prompt,
         tools=tools
     )

@@ -1,6 +1,6 @@
 """
 Google Search Sub-Agent for Quality Benchmarks
-This is a dedicated sub-agent that ONLY uses google_search (no custom tools)
+This is a dedicated sub-agent that  uses google_search of adk
 """
 import logging
 import os
@@ -26,10 +26,7 @@ _cache_timestamps = {}
 
 def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]:
     """
-    Create a dedicated sub-agent that ONLY uses google_search.
-    
-    This bypasses the ADK limitation where google_search cannot be mixed with custom tools.
-    The main agent will delegate to this sub-agent when it needs web search.
+    Create a dedicated agent that ONLY uses google_search.
     
     Args:
         enable_search: If False, returns None (disables search functionality)
@@ -38,19 +35,17 @@ def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]
         LlmAgent configured with google_search tool only, or None if disabled
     """
     if not enable_search:
-        logger.info("🚫 Google Search sub-agent disabled")
+        
         return None
         
-    logger.info("🔧 Creating Google Search sub-agent...")
+
     
     # CRITICAL: ADK expects GOOGLE_API_KEY environment variable
     if not os.environ.get("GOOGLE_API_KEY"):
         if settings.google_api_key:
             os.environ["GOOGLE_API_KEY"] = settings.google_api_key
-            logger.info("✅ Set GOOGLE_API_KEY from settings (separate key for search)")
         elif settings.gemini_api_key:
             os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
-            logger.warning("⚠️ Using GEMINI_API_KEY as fallback - consider adding separate GOOGLE_API_KEY")
         else:
             logger.error("❌ No API key available - cannot create search agent")
             return None
@@ -60,7 +55,7 @@ def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]
             model_name="gemini-1.5-flash",
             temperature=0.1
         )
-        logger.info(f"✅ Gemini model created for search")
+        
     except Exception as e:
         logger.error(f"❌ Failed to create Gemini model: {e}")
         return None
@@ -115,17 +110,15 @@ For EACH model, perform multiple targeted searches:
 **SPECIAL CASES:**
 - If no data found: "No public benchmark data available for this specific model version"
 """,
-        tools=[google_search]  # ONLY google_search, no custom tools
+        tools=[google_search]  
     )
-    
-    logger.info("✅ Google Search sub-agent created successfully")
+
     return search_agent
 
 
 async def search_model_benchmarks(model_names: list[str]) -> str:
     """
-    Standalone function to search for model benchmarks independently.
-    Includes caching and retry logic to handle API overload.
+    Standalone function to search for model benchmarks.
     
     Args:
         model_names: List of model names to search for
@@ -137,13 +130,8 @@ async def search_model_benchmarks(model_names: list[str]) -> str:
     cache_key = ",".join(sorted(model_names))
     if cache_key in _search_cache:
         cache_age = time.time() - _cache_timestamps.get(cache_key, 0)
-        if cache_age < 3600:  # 1 hour = 3600 seconds
-            logger.info(f"📦 Using cached search results ({int(cache_age/60)} minutes old)")
+        if cache_age < 3600:  
             return _search_cache[cache_key]
-        else:
-            logger.info(f"🗑️ Cache expired for key: {cache_key}, fetching fresh data.")
-    
-    logger.info(f"🔍 [Cache Miss] Starting independent search for {len(model_names)} models...")
     
     search_agent = create_google_search_agent(enable_search=True)
     if search_agent is None:
@@ -167,11 +155,9 @@ async def search_model_benchmarks(model_names: list[str]) -> str:
     )
     
     max_retries = 3
-    retry_delay_base = 2  # seconds
-    
+    retry_delay_base = 2  
     for attempt in range(max_retries):
         try:
-            logger.info(f"🔎 Running search query (attempt {attempt + 1}/{max_retries})...")
             response_text = ""
             
             for event in runner.run(
@@ -185,46 +171,30 @@ async def search_model_benchmarks(model_names: list[str]) -> str:
                             if hasattr(part, 'text') and part.text:
                                 response_text += part.text
             
-            logger.info(f"✅ Search completed - {len(response_text)} chars received")
 
             redirect_pattern = r'https://vertexaisearch\.cloud\.google\.com/grounding-api-redirect/[A-Za-z0-9_-]+'
             redirect_urls = re.findall(redirect_pattern, response_text)
             
             if redirect_urls:
-                logger.info(f"🔗 Found {len(redirect_urls)} redirect URLs, resolving...")
                 for redirect_url in set(redirect_urls):
                     try:
                         resp = requests.head(redirect_url, allow_redirects=True, timeout=3)
                         real_url = resp.url
                         if real_url != redirect_url:
-                            logger.info(f"✅ Resolved: {redirect_url[:80]}... → {real_url}")
                             response_text = response_text.replace(redirect_url, real_url)
                         else:
                             logger.warning(f"⚠️ No redirect for: {redirect_url[:80]}...")
                     except Exception as e:
-                        logger.warning(f"⚠️ Failed to resolve {redirect_url[:80]}...: {e}")
-                logger.info("✅ URL resolution complete")
-            
+                        pass
             remaining_redirects = re.findall(redirect_pattern, response_text)
             if remaining_redirects:
                 logger.warning(f"⚠️ Removing {len(remaining_redirects)} unresolved redirect URLs")
                 for unresolved_url in remaining_redirects:
                     response_text = re.sub(r'\s*\*\s+' + re.escape(unresolved_url) + r'[^\n]*\n?', '', response_text)
-                logger.info("🧹 Removed all vertexaisearch URLs from output")
 
             response_text = re.sub(r'(https?://[^\s]+?)(=+)(\s|$)', r'\1\3', response_text)
-            logger.info("🧹 Cleaned up URL formatting artifacts")
-
-            try:
-                debug_file = "/tmp/search_agent_output.txt"
-                with open(debug_file, "w") as f:
-                    f.write(response_text)
-                logger.info(f"💾 Search output saved to {debug_file}")
-            except Exception as e:
-                logger.warning(f"⚠️ Could not write debug file: {e}")
 
             if response_text:
-                logger.info(f"💾 Caching successful result for key: {cache_key}")
                 _search_cache[cache_key] = response_text
                 _cache_timestamps[cache_key] = time.time()
                 return response_text
