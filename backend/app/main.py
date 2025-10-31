@@ -17,7 +17,6 @@ from .core.exceptions import (
 )
 
 
-# Setup logging
 setup_logging()
 logger = get_logger("main")
 
@@ -25,15 +24,7 @@ logger = get_logger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup
-    logger.info("🚀 Starting Benchmind API...")
-    logger.info(f"Environment: {'Development' if settings.debug else 'Production'}")
-    logger.info(f"API Keys configured: Mistral={bool(settings.mistral_api_key)}, Gemini={bool(settings.gemini_api_key)}")
-    
     yield
-    
-    # Shutdown
-    logger.info("🛑 Shutting down Benchmind API...")
 
 
 def create_app() -> FastAPI:
@@ -47,7 +38,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
@@ -56,24 +46,21 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Add exception handlers
     app.add_exception_handler(BenchmindException, benchmind_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
     
-    # Include routers
     from .routers import models, consultant, test_ecologits, auth, user, run
     from .routers import settings as settings_router
     app.include_router(auth.router)
     app.include_router(user.router)
     app.include_router(user.profile_router)
     app.include_router(settings_router.router)
-    app.include_router(run.router)  # New async run orchestrator
+    app.include_router(run.router)
     app.include_router(models.router)
     app.include_router(consultant.router)
     app.include_router(test_ecologits.router)
     
-    # Root endpoint
     @app.get("/")
     async def root():
         """Root endpoint with API information."""
@@ -107,7 +94,6 @@ def create_app() -> FastAPI:
     return app
 
 
-# Create the app instance
 app = create_app()
 
 

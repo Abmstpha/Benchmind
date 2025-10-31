@@ -5,7 +5,6 @@ Tools for Benchmind AI Consultant ADK Agent
 import json
 import time
 import logging
-# from langchain_core.tools import tool  # <-- REMOVED for ADK
 from ..utils.utils import call_mistral_api_with_ecologits, calculate_cost, get_model_name
 from ..core.config import settings
 
@@ -19,7 +18,6 @@ if not tools_logger.handlers:
     tools_logger.addHandler(handler)
 
 
-# @tool  # <-- REMOVED for ADK
 def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt: str, complexity: str = "medium") -> str:
     """
     Universal AI model benchmarking tool for ANY use case.
@@ -31,30 +29,23 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
     
     Args:
         user_task: Description of what the user wants to build
-        selected_models: Comma-separated list of model IDs to test  
-        test_prompt: The specific prompt to test the models with (YOU create this based on the task)
+        selected_models  
+        test_prompt: The specific prompt to test the models with 
         complexity: simple, medium, or complex
     
     Returns:
         JSON string with detailed benchmark results
     """
     
-    tools_logger.info(" BENCHMARKING TOOL CALLED")
-    tools_logger.info(f" User task: {user_task}")
-    tools_logger.info(f" Selected models: {selected_models}")
-    tools_logger.info(f" Test prompt: {test_prompt}")
-    tools_logger.info(f" Complexity: {complexity}")
     
     results = []
     model_list = [m.strip() for m in selected_models.split(",")]
     
-    tools_logger.info(f" Processing {len(model_list)} models: {model_list}")
     
     for model_id in model_list:
-        tools_logger.info(f" Starting benchmark for model: {model_id}")
         try:
             # Calculate expected tokens based on prompt length and complexity
-            prompt_tokens = len(test_prompt.split()) * 1.3  # Rough token estimation
+            prompt_tokens = len(test_prompt.split()) * 1.3  # 
             if complexity == "simple":
                 expected_response_tokens = 50
             elif complexity == "medium":
@@ -64,16 +55,13 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             
             total_expected_tokens = int(prompt_tokens + expected_response_tokens)
             
-            # Execute the actual API call with EcoLogits environmental tracking
-            tools_logger.info(f"📡 Calling EcoLogits API for {model_id}...")
+            # Execute the API call with EcoLogits environmental tracking
             start_time = time.time()
             try:
                 response, energy_wh, co2_g = call_mistral_api_with_ecologits(
                     model_id, test_prompt, expected_response_tokens, settings.mistral_api_key
                 )
                 end_time = time.time()
-                tools_logger.info(f"✅ EcoLogits call successful for {model_id}")
-                tools_logger.info(f"⚡ Energy: {energy_wh} Wh, CO2: {co2_g} g")
             except Exception as e:
                 # Skip invalid models and continue with others
                 tools_logger.warning(f"⚠️ Skipping model {model_id}: {str(e)}")
@@ -84,7 +72,6 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             usage = response.get('usage', {})
             actual_tokens = usage.get('total_tokens', total_expected_tokens)
             
-            tools_logger.info(f"📊 {model_id} results - Latency: {latency_ms:.1f}ms, Tokens: {actual_tokens}")
             
             # Calculate cost based on ACTUAL token usage
             cost_usd = calculate_cost(actual_tokens, model_id)
@@ -112,27 +99,13 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
         tools_logger.warning("⚠️ No valid models found")
         return json.dumps({"error": "No valid models found. Please check model names and try again."})
     
-    tools_logger.info(f"✅ Benchmarking completed for {len(results)} models")
     
-    # LOG THE ACTUAL TOOL OUTPUT
-    tools_logger.info("=" * 80)
-    tools_logger.info("⚡ BENCHMARK TOOL OUTPUT (RAW ENVIRONMENTAL DATA):")
-    tools_logger.info("=" * 80)
-    for result in results:
-        tools_logger.info(f"🔹 {result.get('model_name', 'Unknown')}:")
-        tools_logger.info(f"   Energy: {result.get('energy_wh', 0)} Wh")
-        tools_logger.info(f"   CO₂: {result.get('co2_g', 0)} g")
-        tools_logger.info(f"   Latency: {result.get('latency_ms', 0)} ms")
-        tools_logger.info(f"   Cost: ${result.get('cost_usd', 0)}")
-        tools_logger.info(f"   Tokens: {result.get('tokens_used', 0)}")
-    tools_logger.info("=" * 80)
     
     return json.dumps(results)
 
 
-# @tool  # <-- REMOVED for ADK
 def analyze_cost_efficiency(budget_usd: float) -> str:
-    """Analyze which models fit within a given budget. Input: budget in USD as float"""
+    """Analyze which models fit within a given budget."""
     analysis = {
         "budget_usd": budget_usd,
         "models": {

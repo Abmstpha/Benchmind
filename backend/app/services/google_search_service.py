@@ -15,10 +15,8 @@ class GoogleSearchService:
         """
         Search web for quality benchmarks - runs in parallel
         """
-        # Create cache key from task + models
         cache_key = f"quality_{hash(task_description + ''.join(sorted(model_ids)))}"
         
-        # Check cache first
         from ..db.database import SessionLocal
         from ..db.models import SearchCache
         db = SessionLocal()
@@ -26,7 +24,6 @@ class GoogleSearchService:
         try:
             cached = db.query(SearchCache).filter(SearchCache.cache_key == cache_key).first()
             if cached:
-                logger.info(f"🎯 Cache HIT for quality analysis: {cache_key}")
                 import json
                 return json.loads(cached.result_text)
         except Exception as e:
@@ -34,19 +31,14 @@ class GoogleSearchService:
         finally:
             db.close()
         
-        logger.info(f"🔍 Cache MISS - Analyzing quality for {len(model_ids)} models via Google search")
         
-        # Run REAL search agent for quality analysis
         try:
             from ..agents.adk_search_agent import create_google_search_agent
             
-            # Create search agent
             search_agent = create_google_search_agent(enable_search=True)
             
             if search_agent:
-                logger.info("🤖 Running Google Search agent for quality analysis...")
                 
-                # Create search prompt for quality analysis
                 search_prompt = f"""
 Research the quality and performance of these AI models for the task: {task_description}
 
@@ -87,16 +79,7 @@ Do NOT make up data - only use real information you find online.
                                 if hasattr(part, 'text') and part.text:
                                     analysis_text += part.text
                 
-                logger.info(f"✅ Search agent analysis received: {len(analysis_text)} characters")
                 
-                # LOG THE ACTUAL SEARCH AGENT OUTPUT
-                logger.info("=" * 80)
-                logger.info("🔍 SEARCH AGENT OUTPUT (WHAT GETS SAVED TO DB):")
-                logger.info("=" * 80)
-                logger.info(analysis_text)
-                logger.info("=" * 80)
-                
-                # Structure the result as markdown text for UI rendering
                 result = {
                     "analysis_text": analysis_text,
                     "summary": f"Internet research completed for {len(model_ids)} models",
@@ -108,7 +91,6 @@ Do NOT make up data - only use real information you find online.
                 }
                 
             else:
-                logger.warning("⚠️ Search agent not available - using fallback")
                 result = {
                     "analysis_text": f"## Quality Analysis\n\nSearch agent unavailable. Please manually research the quality of these models for your {task_description} task:\n\n" + "\n".join([f"- {model_id}" for model_id in model_ids]),
                     "summary": "Search agent unavailable",
@@ -117,7 +99,7 @@ Do NOT make up data - only use real information you find online.
                 }
                 
         except Exception as e:
-            logger.error(f"❌ Search agent failed: {e}")
+            logger.error(f"Search agent failed: {e}")
             result = {
                 "analysis_text": f"## Quality Analysis\n\nSearch analysis failed: {str(e)}\n\nPlease manually research the quality of these models for your {task_description} task.",
                 "summary": "Search analysis failed",
@@ -125,7 +107,6 @@ Do NOT make up data - only use real information you find online.
                 "evidence": []
             }
         
-        # Save to cache for future use
         try:
             db = SessionLocal()
             import json
@@ -137,12 +118,10 @@ Do NOT make up data - only use real information you find online.
             )
             db.add(cache_entry)
             db.commit()
-            logger.info(f"💾 Cached quality analysis: {cache_key}")
         except Exception as e:
             logger.warning(f"Failed to cache result: {e}")
         finally:
             db.close()
         
-        logger.info(f"✅ Quality analysis complete: {len(result.get('evidence', []))} evidence points")
         
         return result

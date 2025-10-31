@@ -1,5 +1,5 @@
 """
-New async run orchestrator - single card workflow.
+ async run orchestrator - single card workflow.
 Handles POST /api/run and GET /api/run/{run_id}/events (SSE).
 """
 
@@ -52,7 +52,7 @@ async def start_run(
     Start a new benchmark run.
     Returns run_id immediately and processes in background.
     """
-    # Check credits (profile is already fetched by get_current_user)
+    # Check user credits 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     
@@ -66,10 +66,6 @@ async def start_run(
     profile.credits -= 1
     db.commit()
     
-    logger.info(f"🚀 Starting new run for {profile.email}")
-    logger.info(f"Project: {request.project_name}")
-    logger.info(f"Task: {request.task_description}")
-    logger.info(f"Models: {request.selected_models}")
     
     # Set defaults
     constraints = request.constraints or {
@@ -104,7 +100,7 @@ async def process_run(run_id: str, user: Profile):
     Background task that processes the benchmark run.
     Updates job_store with progress at each step.
     """
-    # Use asyncio.shield to prevent cancellation when client disconnects
+ 
     try:
         await asyncio.shield(_process_run_inner(run_id, user))
     except Exception as e:
@@ -125,25 +121,21 @@ async def _process_run_inner(run_id: str, user: Profile):
             return
         
         job_store.update_status(run_id, RunStatus.RUNNING)
-        logger.info(f"▶️ Processing run {run_id}")
         
         # Step 1: Parse & Plan
         job_store.update_step(run_id, "parse_plan", StepStatus.RUNNING)
         await asyncio.sleep(0.5)  # Simulate work
-        logger.info(f"✅ Parse & Plan complete for {run_id}")
         job_store.update_step(run_id, "parse_plan", StepStatus.DONE, progress=1.0)
         
         # Step 2: Craft Test Prompts
         job_store.update_step(run_id, "craft_prompts", StepStatus.RUNNING)
         await asyncio.sleep(0.5)
-        logger.info(f"✅ Craft Prompts complete for {run_id}")
         job_store.update_step(run_id, "craft_prompts", StepStatus.DONE, progress=1.0)
         
-        # Step 3: Benchmark Calls (actual work)
+        # Step 3: Benchmark Calls 
         job_store.update_step(run_id, "benchmark_calls", StepStatus.RUNNING)
-        logger.info(f"🔧 Running benchmarks for {run_id}")
         
-        # Call the actual consultant agent
+        # Call the consultant agent
         try:
             agent = create_consultant_agent(settings.default_gemini_model)
             
@@ -170,7 +162,6 @@ Assumptions: {run.assumptions}
             
             # Process 1: Run REAL agent for efficiency recommendation (no quality!)
             if react_agent:
-                logger.info("🤖 Running ReAct agent for efficiency analysis...")
                 try:
                     # Create proper agent prompt
                     agent_prompt = f"""
@@ -212,14 +203,7 @@ Do NOT assess quality. Focus on environmental impact and efficiency trade-offs.
                                     if hasattr(part, 'text') and part.text:
                                         recommendation_text += part.text
                     
-                    logger.info(f"✅ Agent recommendation received: {len(recommendation_text)} characters")
                     
-                    # LOG THE ACTUAL AGENT OUTPUT
-                    logger.info("=" * 80)
-                    logger.info("🤖 EFFICIENCY AGENT OUTPUT (WHAT GETS SAVED TO DB):")
-                    logger.info("=" * 80)
-                    logger.info(recommendation_text)
-                    logger.info("=" * 80)
                     
                     # Parse any tool results from agent execution
                     benchmark_result = {
@@ -334,21 +318,15 @@ Please benchmark these models and provide efficiency recommendations based on en
                 []
             )
             
-            logger.info(f"🔍 DEBUG BENCHMARK DATA SOURCES:")
-            logger.info(f"   job_store run.benchmark_results: {len(stored_benchmark_results)} items")
-            logger.info(f"   benchmark_results['benchmark_results']: {len(benchmark_results.get('benchmark_results', []))} items")
-            logger.info(f"   final_benchmark_results: {len(final_benchmark_results)} items")
             
             # EMERGENCY FALLBACK: If no benchmark results, try to extract from agent recommendation text
             if not final_benchmark_results and benchmark_results.get('recommendation_text'):
-                logger.info("🚨 NO BENCHMARK DATA FOUND - ATTEMPTING EMERGENCY EXTRACTION FROM LOGS")
                 
                 # Extract EcoLogits data from the recommendation text (this is a fallback)
                 recommendation_text = benchmark_results.get('recommendation_text', '')
                 
                 # Look for the efficiency table in the text
                 if 'mistral-tiny' in recommendation_text.lower():
-                    logger.info("🔧 Found model data in recommendation text - creating fallback EcoLogits data")
                     
                     # Create basic fallback data structure (we'll improve this if needed)
                     final_benchmark_results = [
@@ -377,7 +355,6 @@ Please benchmark these models and provide efficiency recommendations based on en
                             'cost_usd': 0.00063
                         }
                     ]
-                    logger.info(f"✅ Created fallback EcoLogits data: {len(final_benchmark_results)} records")
             
             # Build recommendation
             recommendation = {
@@ -409,7 +386,6 @@ Please benchmark these models and provide efficiency recommendations based on en
                 "summary": f"Analyzed {len(final_benchmark_results)} models"
             }
             
-            logger.info(f"✅ All processes complete for {run_id}")
             
         except Exception as e:
             logger.error(f"❌ Benchmark failed for {run_id}: {e}")
@@ -433,7 +409,6 @@ Please benchmark these models and provide efficiency recommendations based on en
         
         # Mark as complete
         job_store.update_status(run_id, RunStatus.DONE)
-        logger.info(f"✅ Run {run_id} completed successfully")
         
     except Exception as e:
         logger.error(f"❌ Failed to process run {run_id}: {e}")
@@ -450,25 +425,6 @@ def save_run_to_database(run_id: str, user: Profile, run, recommendation, qualit
     db = SessionLocal()
     
     try:
-        logger.info("💾 SAVING RESULTS TO DATABASE")
-        logger.info("=" * 80)
-        
-        # LOG ACTUAL TEXTUAL CONTENT BEING SAVED
-        logger.info("📝 RECOMMENDATION TEXT BEING SAVED TO DB:")
-        logger.info("=" * 80)
-        if recommendation.get('recommendation_text'):
-            logger.info(recommendation['recommendation_text'])
-        else:
-            logger.info("❌ No recommendation text found")
-        logger.info("=" * 80)
-        
-        logger.info("🔍 QUALITY ANALYSIS TEXT BEING SAVED TO DB:")
-        logger.info("=" * 80)
-        if quality_insights.get('analysis_text'):
-            logger.info(quality_insights['analysis_text'])
-        else:
-            logger.info("❌ No quality analysis text found")
-        logger.info("=" * 80)
         
         db_run = BenchmarkRun(
             run_id=run_id,
@@ -486,28 +442,21 @@ def save_run_to_database(run_id: str, user: Profile, run, recommendation, qualit
             completed_at=datetime.utcnow()
         )
         db.add(db_run)
-        logger.info(f"✅ Created BenchmarkRun record")
         
         # Save individual EcoLogits metrics for graph generation
-        logger.info(f"📊 SAVING ECOLOGITS METRICS:")
         for result in final_benchmark_results:
             ecologits_metric = EcoLogitsMetrics(
                 run_id=run_id,
-                model_id=result.get('model_id', ''),
-                model_name=result.get('model_name', ''),
+                model_id=result.get('model_id', 'unknown'),
+                model_name=result.get('model_name', 'Unknown'),
                 energy_wh=str(result.get('energy_wh', 0)),
                 co2_g=str(result.get('co2_g', 0)),
-                latency_ms=int(result.get('latency_ms', 0)),
+                latency_ms=result.get('latency_ms', 0),
                 cost_usd=str(result.get('cost_usd', 0))
             )
             db.add(ecologits_metric)
-            logger.info(f"   📈 {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
         
         db.commit()
-        logger.info(f"💾 SUCCESSFULLY SAVED TO DATABASE")
-        logger.info(f"   - benchmark_runs table: ✅")
-        logger.info(f"   - ecologits_metrics table: ✅ ({len(final_benchmark_results)} records)")
-        logger.info("=" * 80)
             
     except Exception as e:
         logger.error(f"❌ Failed to save run to database: {e}")
@@ -626,11 +575,6 @@ async def delete_benchmark_run(
     db: Session = Depends(get_db)
 ):
     """Delete a benchmark run and all associated data."""
-    logger.info("=" * 80)
-    logger.info("🗑️ DELETING BENCHMARK RUN")
-    logger.info("=" * 80)
-    logger.info(f"📋 Run ID: {run_id}")
-    logger.info(f"👤 User: {user.email} (ID: {user.id})")
     
     # Verify user owns this run
     run = db.query(BenchmarkRun).filter(
@@ -647,24 +591,17 @@ async def delete_benchmark_run(
         ecologits_deleted = db.query(EcoLogitsMetrics).filter(
             EcoLogitsMetrics.run_id == run_id
         ).delete()
-        logger.info(f"🗑️ Deleted {ecologits_deleted} EcoLogits metrics records")
         
         # Delete from consultations table (legacy)
         consultations_deleted = db.query(Consultation).filter(
             Consultation.user_id == user.id,
             Consultation.task_description == run.task_description
         ).delete()
-        logger.info(f"🗑️ Deleted {consultations_deleted} consultation records")
         
         # Delete the main benchmark run
         db.delete(run)
         db.commit()
         
-        logger.info(f"✅ SUCCESSFULLY DELETED RUN {run_id}")
-        logger.info(f"   - benchmark_runs: ✅")
-        logger.info(f"   - ecologits_metrics: {ecologits_deleted} records")
-        logger.info(f"   - consultations: {consultations_deleted} records")
-        logger.info("=" * 80)
         
         return {"message": "Run deleted successfully", "run_id": run_id}
         

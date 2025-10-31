@@ -29,7 +29,7 @@ def create_google_search_agent(enable_search: bool = True) -> Optional[LlmAgent]
     Create a dedicated agent that ONLY uses google_search.
     
     Args:
-        enable_search: If False, returns None (disables search functionality)
+        enable_search: If False, returns None 
     
     Returns:
         LlmAgent configured with google_search tool only, or None if disabled

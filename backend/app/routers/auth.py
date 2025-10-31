@@ -8,12 +8,9 @@ from datetime import datetime, timedelta
 import hashlib
 import hmac
 
-# Simple password hashing with SHA256
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-def verify_password(password: str, hashed: str) -> bool:
-    return hmac.compare_digest(hash_password(password), hashed)
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -21,11 +18,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/signup")
 async def signup(signup_request: UserCreate, db: Session = Depends(get_db)):
-    print(f"🔍 Signup request for: {signup_request.email}")
     """
     Step 1: User enters email + password for signup, system sends OTP.
     """
-    # Check if already registered
     existing_profile = db.query(Profile).filter(
         Profile.email == signup_request.email.lower()
     ).first()
@@ -36,41 +31,32 @@ async def signup(signup_request: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered. Please use login instead."
         )
     
-    # Thread-safe cleanup of expired OTPs + existing OTPs for this email
     try:
-        # Clean all expired OTPs globally
         expired_count = db.query(OTP).filter(
             OTP.expires_at < datetime.utcnow()
         ).delete(synchronize_session=False)
         
-        # Clean existing OTPs for this email (prevent spam)
         existing_count = db.query(OTP).filter(
             OTP.email == signup_request.email.lower()
         ).delete(synchronize_session=False)
         
         db.commit()
-        if expired_count > 0:
-            print(f"🧹 Auto-cleaned {expired_count} expired OTPs")
-        if existing_count > 0:
-            print(f"🧹 Cleaned {existing_count} existing OTPs for {signup_request.email}")
     except Exception as e:
         db.rollback()
-        print(f"⚠️ Cleanup failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database cleanup failed"
         )
     
-    # Generate OTP (don't create student yet!)
+ 
     code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=5)
     
-    # Save OTP to database with hashed password for later use
     otp = OTP(
         email=signup_request.email.lower(),
         code=code,
         expires_at=expires_at,
-        password_hash=hash_password(signup_request.password)  # Store hashed password temporarily
+        password_hash=hash_password(signup_request.password)
     )
     db.add(otp)
     db.commit()
@@ -86,29 +72,23 @@ async def signup(signup_request: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/verify-signup")
 def verify_signup(request: OTPRequest, db: Session = Depends(get_db)):
-    # Thread-safe cleanup of expired OTPs (runs on each request)
     try:
         expired_count = db.query(OTP).filter(
             OTP.expires_at < datetime.utcnow()
         ).delete(synchronize_session=False)
         if expired_count > 0:
             db.commit()
-            print(f"🧹 Auto-cleaned {expired_count} expired OTPs")
     except Exception as e:
         db.rollback()
-        print(f"⚠️ Cleanup failed (non-critical): {e}")
-        # Continue with verification even if cleanup fails
     """
-    Step 2: Student enters OTP code to verify email and create account.
+    Step 2: User enters OTP code to verify email and create account.
     """
-    # Find valid OTP (get all unverified OTPs for secure comparison)
     otps = db.query(OTP).filter(
         OTP.email == request.email.lower(),
         OTP.verified == False,
         OTP.expires_at > datetime.utcnow()
     ).order_by(OTP.created_at.desc()).all()
     
-    # Secure OTP comparison using hmac.compare_digest
     valid_otp = None
     for otp in otps:
         if hmac.compare_digest(otp.code, request.code):
@@ -123,7 +103,6 @@ def verify_signup(request: OTPRequest, db: Session = Depends(get_db)):
     
     otp = valid_otp
     
-    # Check if profile already exists
     existing_profile = db.query(Profile).filter(
         Profile.email == request.email.lower()
     ).first()
@@ -134,7 +113,6 @@ def verify_signup(request: OTPRequest, db: Session = Depends(get_db)):
             detail="Profile already exists"
         )
     
-    # Create the profile
     profile = Profile(
         email=request.email.lower()
     )
@@ -144,7 +122,6 @@ def verify_signup(request: OTPRequest, db: Session = Depends(get_db)):
     otp.verified = True
     db.commit()
     
-    # Clean up verified/expired OTPs
     db.query(OTP).filter(
         OTP.email == request.email.lower(),
         (OTP.verified == True) | (OTP.expires_at < datetime.utcnow())
@@ -202,7 +179,6 @@ async def reset_password(request: UserCreate, db: Session = Depends(get_db)):
     db.query(OTP).filter(OTP.email == request.email.lower()).delete()
     db.commit()
     
-    # Generate OTP for password reset
     code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=5)
     

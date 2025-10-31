@@ -50,13 +50,10 @@ def update_profile(
             detail="Profile not found"
         )
     
-    # Update name if provided
     if request.name is not None:
         profile.name = request.name
     
-    # Update email if provided (direct update, no OTP)
     if request.email is not None:
-        # Check if email already exists
         existing = db.query(Profile).filter(
             Profile.email == request.email.lower(),
             Profile.id != profile.id
@@ -94,7 +91,6 @@ async def request_email_change(
             detail="Profile not found"
         )
     
-    # Check if new email already exists
     existing = db.query(Profile).filter(Profile.email == request.new_email.lower()).first()
     if existing:
         raise HTTPException(
@@ -102,15 +98,12 @@ async def request_email_change(
             detail="Email already in use"
         )
     
-    # Clean existing OTPs for new email
     db.query(OTP).filter(OTP.email == request.new_email.lower()).delete()
     db.commit()
     
-    # Generate OTP
     code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=5)
     
-    # Save OTP with current email as password_hash (to verify ownership)
     otp = OTP(
         email=request.new_email.lower(),
         code=code,
@@ -120,7 +113,6 @@ async def request_email_change(
     db.add(otp)
     db.commit()
     
-    # Send OTP to new email
     await send_otp_email(request.new_email.lower(), code, profile.name or "User")
     
     return {
@@ -157,7 +149,6 @@ def verify_email_change(
             detail="No valid OTP found"
         )
     
-    # Verify OTP and check ownership
     otp = None
     for candidate_otp in otps:
         if hmac.compare_digest(candidate_otp.code, request.code) and candidate_otp.password_hash == user_email:
@@ -182,7 +173,6 @@ def verify_email_change(
     otp.verified = True
     db.commit()
     
-    # Clean up OTPs
     db.query(OTP).filter(
         OTP.email == request.new_email.lower(),
         (OTP.verified == True) | (OTP.expires_at < datetime.utcnow())
@@ -211,15 +201,12 @@ async def request_password_change(
             detail="Profile not found"
         )
     
-    # Clean existing OTPs
     db.query(OTP).filter(OTP.email == user_email).delete()
     db.commit()
     
-    # Generate OTP
     code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=5)
     
-    # Save OTP with new password hash
     otp = OTP(
         email=user_email,
         code=code,
@@ -229,7 +216,6 @@ async def request_password_change(
     db.add(otp)
     db.commit()
     
-    # Send OTP
     await send_otp_email(user_email, code, profile.name or "User")
     
     return {
@@ -259,7 +245,6 @@ def verify_password_change(
             detail="No valid OTP found"
         )
     
-    # Verify OTP
     otp = None
     for candidate_otp in otps:
         if hmac.compare_digest(candidate_otp.code, request.code):
@@ -272,11 +257,9 @@ def verify_password_change(
             detail="Invalid OTP code"
         )
     
-    # Mark as verified (password hash is already in OTP table)
     otp.verified = True
     db.commit()
     
-    # Clean up OTPs
     db.query(OTP).filter(
         OTP.email == user_email,
         (OTP.verified == True) | (OTP.expires_at < datetime.utcnow())

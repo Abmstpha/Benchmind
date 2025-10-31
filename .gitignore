@@ -59,6 +59,24 @@ test_dynamic_fetch.py
 test_search_function.py
 test_subagent_standalone.py
 test_google_search.py
+test_agent_integration.py
+
+# Development/Debug files
+test_report.txt
+test_agent_integration.log
+run_integration_tests.sh
+
+# Documentation (keep only essential)
+SLIDES_GUIDE.md
+TICKETS.md
+backend/DEPLOYMENT.md
+steps.md
+user_flow.md
+
+# OS & System files
+Thumbs.db
+*.tmp
+*.temp
 
 # Jupyter
 .ipynb_checkpoints/

@@ -25,17 +25,10 @@ from ..routers.user import get_current_user
 router = APIRouter(prefix="/ai-consultant", tags=["ai-consultant"])
 
 consultant_logger = logging.getLogger("benchmind.consultant")
-consultant_logger.setLevel(logging.DEBUG)
-if not consultant_logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    consultant_logger.addHandler(handler)
 
 react_agent = None
 try:
     react_agent = create_consultant_agent(settings.default_gemini_model)
-    consultant_logger.info("✅ ReAct agent initialized successfully")
 except Exception as e:
     consultant_logger.error(f"❌ Failed to initialize ReAct agent: {e}")
 
@@ -47,9 +40,7 @@ async def get_ai_recommendation(
     db: Session = Depends(get_db)
 ):
     """Get intelligent AI model recommendation using PARALLEL agents - benchmarking + search!
-    
-    CRITICAL: Both agents run INDEPENDENTLY in parallel to avoid conflicts.
-    Requires authentication and deducts 1 credit per request.
+
     """
     
     # Get user profile and check credits
@@ -69,30 +60,20 @@ async def get_ai_recommendation(
     profile.credits -= 1
     db.commit()
     
-    consultant_logger.info("🚀 DIRECT REACT AGENT REQUEST STARTED")
-    consultant_logger.info(f"👤 User: {user_email} (Credits remaining: {profile.credits})")
-    consultant_logger.info(f"📋 Task: {request.task_description}")
-    consultant_logger.info(f"🤖 Selected models: {request.selected_models}")
-    consultant_logger.info(f"📝 User context: {request.user_context}")
     
     if not react_agent:
-        consultant_logger.error("❌ ReAct agent not available")
         raise HTTPException(status_code=500, detail="AI Consultant not available")
     
     try:
-        consultant_logger.info("🔧 Preparing ReAct agent prompt...")
         prompt_parts = [request.task_description]
         if request.user_context:
             prompt_parts.append(f"Additional context: {request.user_context}")
         prompt_parts.append(f"Please compare these specific models: {', '.join(request.selected_models)}")
         
         full_prompt = "\n\n".join(prompt_parts)
-        consultant_logger.info(f"📝 Full prompt prepared ({len(full_prompt)} chars)")
         
-        consultant_logger.info("🧠 Invoking ADK ReAct agent using Runner...")
         
-        # NOTE: Main agent uses GEMINI_API_KEY, search sub-agent uses GOOGLE_API_KEY
-        # This separation prevents rate limit conflicts
+        
         session_service = InMemorySessionService()
         session = await session_service.create_session(
             user_id="benchmind-user",
@@ -112,7 +93,6 @@ async def get_ai_recommendation(
             parts=[types.Part.from_text(text=full_prompt)]
         )
         
-        consultant_logger.info("🔄 Starting Runner.run() iteration...")
         
         final_response = None
         all_events = []
@@ -126,7 +106,6 @@ async def get_ai_recommendation(
                 run_config=run_config
             ):
                 event_count += 1
-                consultant_logger.info(f"📦 Event #{event_count} received - type: {type(event).__name__}")
                 all_events.append(event)
                 
                 if hasattr(event, 'content') and event.content:
@@ -136,54 +115,29 @@ async def get_ai_recommendation(
                                 if final_response is None:
                                     final_response = ""
                                 final_response += part.text
-                                consultant_logger.info(f"✅ Event #{event_count} - Extracted text: {part.text[:100]}...")
                 
-                if hasattr(event, 'error_code') and event.error_code and event.error_code != 'OK':
-                    consultant_logger.warning(f"⚠️ Event #{event_count} has error: {event.error_code} - {getattr(event, 'error_message', 'No message')}")
-            
-            if all_events:
-                last_event = all_events[-1]
-                consultant_logger.info(f"📦 Last event attributes: {dir(last_event)}")
-                if hasattr(last_event, 'error_code'):
-                    consultant_logger.info(f"📦 Last event error_code: {last_event.error_code}")
-                if hasattr(last_event, 'error_message'):
-                    consultant_logger.info(f"📦 Last event error_message: {last_event.error_message}")
-        
         except Exception as agent_error:
-            consultant_logger.error(f"❌ AGENT EVENT LOOP FAILED: {type(agent_error).__name__}: {agent_error}")
-            consultant_logger.exception("Full agent error traceback:")
+            consultant_logger.error(f"Agent event loop failed: {type(agent_error).__name__}: {agent_error}")
         
-        if final_response:
-            consultant_logger.info(f"✅ Final response extracted: {len(final_response)} chars")
-            consultant_logger.info(f"📝 First 200 chars: {final_response[:200]}...")
-        else:
-            consultant_logger.error("❌ NO FINAL RESPONSE EXTRACTED FROM AGENT!")
-            consultant_logger.error(f"❌ Total events processed: {event_count}")
-            consultant_logger.error(f"❌ Events with content: {sum(1 for e in all_events if hasattr(e, 'content') and e.content)}")
+        if not final_response:
+            consultant_logger.error("No final response extracted from agent")
         
         recommendation = final_response if final_response else "No response from agent"
         
-        consultant_logger.info("✅ ReAct agent invocation completed")
-        consultant_logger.info(f"📝 Recommendation length: {len(recommendation)} chars")
-        consultant_logger.info(f"📊 Total events received: {len(all_events)}")
         
-        consultant_logger.warning("🚀 STARTING PARALLEL AGENT EXECUTION...")
         
         async def run_search_agent():
             """Run search agent independently"""
-            consultant_logger.warning("🔍 [SEARCH AGENT] Starting...")
             try:
                 from ..agents.adk_search_agent import search_model_benchmarks
                 result = await search_model_benchmarks(request.selected_models)
-                consultant_logger.info(f"✅ [SEARCH AGENT] Completed: {len(result) if result else 0} chars")
                 return result if result else "No search results found"
             except Exception as e:
-                consultant_logger.error(f"❌ [SEARCH AGENT] FAILED: {e}")
+                consultant_logger.error(f"Search agent failed: {e}")
                 return "No search results found"
         
         async def run_benchmarking_agent():
             """Run benchmarking agent independently"""
-            consultant_logger.warning("📊 [BENCHMARK AGENT] Starting...")
             try:
                 from ..tools.tools import benchmark_models_for_task
                 import json
@@ -192,10 +146,6 @@ async def get_ai_recommendation(
                 task_desc = f"Benchmarking for: {request.task_description}"
                 test_prompt = f"Analyze this text: {request.task_description}"
                 
-                consultant_logger.info(f"🔧 [BENCHMARK AGENT] Calling tool with:")
-                consultant_logger.info(f"   Models: {models_str}")
-                consultant_logger.info(f"   Task: {task_desc}")
-                consultant_logger.info(f"   Prompt: {test_prompt[:100]}...")
                 
                 loop = asyncio.get_event_loop()
                 tool_result = await loop.run_in_executor(
@@ -207,31 +157,20 @@ async def get_ai_recommendation(
                     "medium"
                 )
                 
-                consultant_logger.info(f"🔍 [BENCHMARK AGENT] Raw tool result type: {type(tool_result)}")
-                consultant_logger.info(f"🔍 [BENCHMARK AGENT] Raw tool result length: {len(str(tool_result)) if tool_result else 0}")
                 
                 if isinstance(tool_result, str):
                     try:
                         parsed_results = json.loads(tool_result)
-                        consultant_logger.info(f"✅ [BENCHMARK AGENT] Successfully parsed {len(parsed_results)} results")
-                        
-                        # Log the actual data we got
-                        for i, result in enumerate(parsed_results):
-                            consultant_logger.info(f"   Result {i+1}: {result.get('model_name', 'Unknown')} - {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
                         
                         return parsed_results
                     except json.JSONDecodeError as je:
-                        consultant_logger.error(f"❌ [BENCHMARK AGENT] JSON decode error: {je}")
-                        consultant_logger.error(f"❌ [BENCHMARK AGENT] Raw result: {tool_result[:500]}...")
+                        consultant_logger.error(f"Benchmark agent JSON decode error: {je}")
                         return []
                 else:
-                    consultant_logger.error(f"❌ [BENCHMARK AGENT] Invalid result type: {type(tool_result)}")
-                    consultant_logger.error(f"❌ [BENCHMARK AGENT] Result content: {str(tool_result)[:200]}...")
+                    consultant_logger.error(f"Benchmark agent invalid result type: {type(tool_result)}")
                     return []
             except Exception as e:
-                consultant_logger.error(f"❌ [BENCHMARK AGENT] FAILED: {e}")
-                import traceback
-                consultant_logger.error(f"❌ [BENCHMARK AGENT] Traceback: {traceback.format_exc()}")
+                consultant_logger.error(f"Benchmark agent failed: {e}")
                 return []
         
         web_insights, benchmark_results = await asyncio.gather(
@@ -240,12 +179,8 @@ async def get_ai_recommendation(
             return_exceptions=False
         )
         
-        consultant_logger.warning("✅ PARALLEL EXECUTION COMPLETED")
-        consultant_logger.info(f"📊 Benchmark results: {len(benchmark_results)} models")
-        consultant_logger.info(f"🔍 Search insights: {len(web_insights)} chars")
                 
         if not benchmark_results:
-            consultant_logger.warning("⚠️ No benchmark results from agent, attempting direct tool call fallback")
             
             # Try calling the benchmarking tool directly as a last resort
             try:
@@ -256,26 +191,18 @@ async def get_ai_recommendation(
                 task_desc = f"Benchmarking for: {request.task_description}"
                 test_prompt = f"Analyze this text: {request.task_description}"
                 
-                consultant_logger.info("🔧 [FALLBACK] Calling benchmarking tool directly...")
                 direct_result = benchmark_models_for_task(task_desc, models_str, test_prompt, "medium")
                 
                 if isinstance(direct_result, str):
                     fallback_results = json.loads(direct_result)
-                    consultant_logger.info(f"✅ [FALLBACK] Successfully parsed {len(fallback_results)} results from direct tool call")
-                    
-                    # Log the actual data we extracted
-                    for result in fallback_results:
-                        consultant_logger.info(f"   📊 {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
-                    
                     benchmark_results = fallback_results
                 else:
                     raise ValueError(f"Invalid result type: {type(direct_result)}")
                     
             except Exception as fallback_error:
-                consultant_logger.error(f"❌ [FALLBACK] Direct tool call also failed: {fallback_error}")
+                consultant_logger.error(f"Fallback direct tool call failed: {fallback_error}")
                 
                 # Try to fetch recent data from database for these models
-                consultant_logger.warning("⚠️ [FALLBACK] Attempting to fetch recent data from database...")
                 try:
                     from ..db.database import SessionLocal
                     from ..db.models import EcoLogitsMetrics
@@ -300,32 +227,26 @@ async def get_ai_recommendation(
                                 "energy_wh": float(recent_metric.energy_wh),
                                 "tokens_used": 100  # Approximate
                             })
-                            consultant_logger.info(f"   📊 Found recent data for {model_id}: {recent_metric.energy_wh} Wh, {recent_metric.co2_g} g CO₂")
                     
                     db.close()
                     
                     if recent_results:
                         benchmark_results = recent_results
-                        consultant_logger.info(f"✅ [FALLBACK] Using {len(recent_results)} recent database records")
                     else:
-                        consultant_logger.error("❌ [FALLBACK] No recent data found in database")
                         benchmark_results = []  # Return empty instead of fake data
                         
                 except Exception as db_error:
-                    consultant_logger.error(f"❌ [FALLBACK] Database lookup also failed: {db_error}")
+                    consultant_logger.error(f"Database lookup failed: {db_error}")
                     benchmark_results = []  # Return empty instead of fake data
         
-        consultant_logger.info("🎉 DIRECT REACT AGENT REQUEST COMPLETED")
         
         if recommendation:
             sections = recommendation.split("SECTION 1:")
             if len(sections) > 2:
                 recommendation = "SECTION 1:" + sections[1]
-                consultant_logger.warning(f"⚠️ REMOVED DUPLICATION - kept first occurrence only")
         
         if 'web_insights' not in locals():
             web_insights = None
-            consultant_logger.warning("⚠️ web_insights not set - web search may not have run")
         
         return {
             "success": True,
@@ -340,6 +261,5 @@ async def get_ai_recommendation(
         
     except Exception as e:
         import traceback
-        consultant_logger.error(f"💥 DIRECT REACT AGENT FAILED: {e}")
-        consultant_logger.error(f"📋 Full traceback:\n{traceback.format_exc()}")
+        consultant_logger.error(f"Direct ReAct agent failed: {e}")
         raise HTTPException(status_code=500, detail=f"ReAct agent failed: {str(e)}")

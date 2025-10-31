@@ -11,12 +11,7 @@ logger = logging.getLogger("benchmind.web_search")
 def search_model_quality_info(model_names: str) -> str:
     """
     Search the web for quality benchmarks, performance reviews, and news about AI models.
-    
-    This tool searches for:
-    - Benchmark results (MMLU, HumanEval, etc.)
-    - Quality comparisons and reviews
-    - Recent news and updates
-    - Performance assessments
+
     
     Args:
         model_names: Comma-separated list of model names to search for (e.g., "mistral-tiny,mistral-small")

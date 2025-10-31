@@ -32,22 +32,20 @@ class SearchCache(Base):
 class BenchmarkRun(Base):
     __tablename__ = "benchmark_runs"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id = Column(String, unique=True, nullable=False, index=True)  # The run_id from job_store
+    run_id = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False)
-    project_name = Column(String, nullable=False)  # User-friendly project name
+    project_name = Column(String, nullable=False)
     task_description = Column(String, nullable=False)
-    selected_models = Column(JSON, nullable=False)  # List of model IDs
+    selected_models = Column(JSON, nullable=False)
     constraints = Column(JSON)
     assumptions = Column(JSON)
     
-    # Results
-    recommendation = Column(JSON)  # Full recommendation object
-    quality_insights = Column(JSON)  # Quality analysis results
-    analytics_data = Column(JSON)  # Analytics/charts data
-    benchmark_results = Column(JSON)  # Raw benchmark data
+    recommendation = Column(JSON)
+    quality_insights = Column(JSON)
+    analytics_data = Column(JSON)
+    benchmark_results = Column(JSON)
     
-    # Metadata
-    status = Column(String, default="completed")  # completed, failed, etc.
+    status = Column(String, default="completed")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True))
 
@@ -58,13 +56,11 @@ class EcoLogitsMetrics(Base):
     model_id = Column(String, nullable=False)
     model_name = Column(String, nullable=False)
     
-    # Core EcoLogits metrics for graphs (environmental data only)
-    energy_wh = Column(String, nullable=False)  # Energy consumption in Wh
-    co2_g = Column(String, nullable=False)      # CO₂ emissions in grams
-    latency_ms = Column(Integer, nullable=False)  # Latency in milliseconds
-    cost_usd = Column(String, nullable=False)   # Cost in USD
+    energy_wh = Column(String, nullable=False)
+    co2_g = Column(String, nullable=False)
+    latency_ms = Column(Integer, nullable=False)
+    cost_usd = Column(String, nullable=False)
     
-    # Additional metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class OTP(Base):
