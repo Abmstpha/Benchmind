@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { benchmindApi } from '../api/benchmind';
 import { BenchmarkCharts } from './BenchmarkCharts';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,7 +61,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
   useEffect(() => {
     const fetchCredits = async () => {
       try {
-        const response = await fetch('http://localhost:8000/user/status', {
+        const response = await fetch(`${API_BASE_URL}/user/status`, {
           headers: { 'Authorization': `Bearer ${user?.token}` }
         });
         const data = await response.json();

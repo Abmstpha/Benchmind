@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const Settings: React.FC = () => {
@@ -18,7 +19,7 @@ const Settings: React.FC = () => {
     // Load user profile
     const fetchProfile = async () => {
       try {
-        const response = await fetch('http://localhost:8000/user/status', {
+        const response = await fetch(`${API_BASE_URL}/user/status`, {
           headers: {
             'Authorization': `Bearer ${user?.token}`
           }
@@ -42,7 +43,7 @@ const Settings: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/settings', {
+      const response = await fetch(`${API_BASE_URL}/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ const Settings: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/settings/change-email', {
+      const response = await fetch(`${API_BASE_URL}/settings/change-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ const Settings: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/settings/verify-email-change', {
+      const response = await fetch(`${API_BASE_URL}/settings/verify-email-change`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +132,7 @@ const Settings: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/settings/change-password', {
+      const response = await fetch(`${API_BASE_URL}/settings/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +161,7 @@ const Settings: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/settings/verify-password-change', {
+      const response = await fetch(`${API_BASE_URL}/settings/verify-password-change`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
