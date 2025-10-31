@@ -21,16 +21,20 @@ Benchmind is an AI consultant that helps you select optimal models by:
 
 ## 🏗️ Tech Stack
 
-**Backend:** FastAPI + Google ADK (Agent Development Kit) + EcoLogits (ISO 14044)  
-**Frontend:** React + TypeScript + Recharts  
-**AI:** Google Gemini (reasoning) + DuckDuckGo (web search) + Mistral API (benchmarking)
+**Backend:** FastAPI + PostgreSQL + Google ADK + EcoLogits (ISO 14044)  
+**Frontend:** React + TypeScript + Vite + TailwindCSS + Recharts  
+**Database:** PostgreSQL + Alembic migrations  
+**Authentication:** JWT tokens + OTP email verification  
+**AI:** Google Gemini (reasoning) + DuckDuckGo (web search) + Mistral API (benchmarking)  
+**Deployment:** Backend on Render + Frontend on Firebase
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Python 3.8+** with pip
+- **Python 3.11+** with pip
 - **Node.js 18+** with npm
-- **API Keys**: Mistral AI, **2x Google Gemini keys** (see [API_KEY_SETUP.md](API_KEY_SETUP.md))
+- **PostgreSQL** database
+- **API Keys**: Mistral AI, **2x Google Gemini keys**
 
 ### 1. Backend Setup
 
@@ -47,15 +51,18 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your API keys:
+# Edit .env with your API keys and database:
+# DATABASE_URL=postgresql://user:password@localhost:5432/benchmind
+# JWT_SECRET=your-secret-key
 # MISTRAL_API_KEY=your_mistral_key
 # GEMINI_API_KEY=your_first_gemini_key   # Main agent
 # GOOGLE_API_KEY=your_second_gemini_key  # Search agent
 
-# Get your API keys from:
-# Mistral API: https://console.mistral.ai/
-# Google Gemini API: https://aistudio.google.com/app/apikey (create 2 keys)
-# See API_KEY_SETUP.md for detailed instructions
+# Initialize database
+python init_db.py
+
+# Run migrations
+alembic upgrade head
 
 # Start the server (choose one)
 python -m app.main                    # Direct Python execution
@@ -80,22 +87,21 @@ npm install
 npm run dev
 ```
 
-Frontend available at: `http://localhost:3000`
+Frontend available at: `http://localhost:5173` (Vite dev server)
 
 ## 🎮 Usage
 
-1. **Describe your task**: *"I need an AI-powered Q&A system for my knowledge base"*
-2. **Select 1-3 models** to compare from the dropdown menu
-3. **Click "🌱 See greenest models"** and wait 1-2 minutes for benchmarking
-4. **Get intelligent recommendations** with:
-   - **Efficiency metrics**: Latency, cost, CO₂ (measured via real API calls + EcoLogits)
-   - **Quality insights**: MMLU/HumanEval scores (sourced from web search)
-   - **Trade-off analysis**: Speed vs cost vs environmental impact
-   - **Interactive charts**: 
-     - 💰 Cost vs CO₂ scatter plot (color-coded by greenness)
-     - 🕸️ Multi-dimensional radar chart
-     - 📊 Bar charts for latency, cost, and environmental impact
-     - 🌱 EcoLogits environmental insights with real-world equivalents
+### **Live Application:** https://benchmind-app.web.app/
+
+1. **Sign up/Login** with email verification (OTP system)
+2. **Describe your task**: *"I need an AI-powered Q&A system for my knowledge base"*
+3. **Select 1-3 models** to compare from 60+ available models
+4. **Click "🌱 See greenest models"** and wait 1-2 minutes for benchmarking
+5. **View results across 3 pages**:
+   - **Efficiency**: Environmental impact recommendations
+   - **Quality**: Web-sourced benchmarks and analysis
+   - **Analytics**: Historical data with interactive charts
+6. **Session Management**: All runs saved to your profile with delete functionality
 
 ## 📊 Example Output
 
@@ -130,13 +136,16 @@ Winner: Mistral Tiny Latest
 
 ## 🌟 Features
 
-- ✅ **Real-time benchmarking** with actual API calls to Mistral models
+- ✅ **User Authentication** - JWT + OTP email verification system
+- ✅ **Session Management** - All runs saved with user isolation
+- ✅ **Real-time benchmarking** with actual API calls to 60+ Mistral models
 - ✅ **EcoLogits integration** for accurate CO₂ and energy measurements (ISO 14044)
 - ✅ **Google ADK ReAct agent** for intelligent reasoning and tool use
-- ✅ **Independent web search** for quality benchmarks (no rate limit conflicts)
-- ✅ **Dynamic color-coding** - Models ranked by greenness (CO₂ + cost)
-- ✅ **Interactive tooltips** showing exact metrics for each model
-- ✅ **Professional UI** with shadcn/ui components and Tailwind CSS
+- ✅ **Independent web search** for quality benchmarks via Google Search
+- ✅ **Multi-page architecture** - Efficiency, Quality, Analytics views
+- ✅ **Interactive charts** - Recharts with historical data visualization
+- ✅ **Professional UI** - Modern React + TailwindCSS design
+- ✅ **Production deployment** - Backend on Render, Frontend on Firebase
 
 ## 📁 Project Structure
 
@@ -146,49 +155,90 @@ Benchmind/
 │   ├── app/
 │   │   ├── agents/
 │   │   │   ├── adk_green_agent.py      # Main ReAct agent (Google ADK)
-│   │   │   └── adk_search_agent.py     # Web search sub-agent (DuckDuckGo)
+│   │   │   └── adk_search_agent.py     # Web search sub-agent (Google Search)
 │   │   ├── tools/
 │   │   │   ├── tools.py                # Benchmarking & cost analysis tools
 │   │   │   └── duckduckgo_search.py    # Web search implementation
 │   │   ├── routers/
+│   │   │   ├── auth.py                 # Authentication (signup/login/OTP)
+│   │   │   ├── user.py                 # User profile management
+│   │   │   ├── settings.py             # User settings (email/password change)
 │   │   │   ├── consultant.py           # AI consultant endpoint
+│   │   │   ├── run.py                  # Session management & history
 │   │   │   ├── models.py               # Model registry endpoint
 │   │   │   └── test_ecologits.py       # EcoLogits testing endpoint
 │   │   ├── services/
-│   │   │   ├── energy_estimator.py     # Energy/CO₂ calculations
-│   │   │   ├── model_registry.py       # Available models database
-│   │   │   └── simulator.py            # Task simulation logic
+│   │   │   ├── google_search_service.py # Quality analysis via web search
+│   │   │   └── model_registry.py       # Available models database
 │   │   ├── schemas/
+│   │   │   ├── auth.py                 # Authentication schemas
 │   │   │   ├── requests.py             # Pydantic request models
 │   │   │   └── responses.py            # Pydantic response models
+│   │   ├── db/
+│   │   │   ├── database.py             # PostgreSQL connection
+│   │   │   └── models.py               # SQLAlchemy models
 │   │   ├── core/
 │   │   │   ├── config.py               # Settings & environment vars
 │   │   │   ├── logging.py              # Logging configuration
 │   │   │   └── exceptions.py           # Custom exceptions
 │   │   ├── utils/
-│   │   │   └── utils.py                # Helper functions
+│   │   │   ├── utils.py                # EcoLogits & cost calculations
+│   │   │   └── auth_utils.py           # JWT & OTP utilities
 │   │   └── main.py                     # FastAPI app entry point
+│   ├── alembic/                        # Database migrations
 │   ├── requirements.txt
+│   ├── init_db.py                      # Database initialization
 │   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AIConsultant.tsx        # Main consultant interface
 │   │   │   ├── BenchmarkCharts.tsx     # Interactive charts (Recharts)
+│   │   │   ├── BenchmindLanding.tsx    # Home page with model selection
+│   │   │   ├── LandingPage.tsx         # Login/signup page
 │   │   │   ├── ProfessionalLayout.tsx  # App layout & navigation
-│   │   │   └── CleanBenchmindRunner.tsx # Alternative UI
+│   │   │   ├── Profile.tsx             # User profile management
+│   │   │   ├── Settings.tsx            # User settings page
+│   │   │   ├── ProgressOverlay.tsx     # Benchmarking progress
+│   │   │   ├── ResultCards.tsx         # Results navigation cards
+│   │   │   └── MarkdownRenderer.tsx    # Quality analysis renderer
+│   │   ├── pages/
+│   │   │   ├── EfficiencyPage.tsx      # Environmental recommendations
+│   │   │   ├── QualityPage.tsx         # Web-sourced quality analysis
+│   │   │   └── AnalyticsPage.tsx       # Historical data & charts
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx         # Authentication state management
 │   │   ├── api/
 │   │   │   └── benchmind.ts            # API client (Axios)
-│   │   ├── styles/
-│   │   │   └── index.css               # Tailwind CSS
-│   │   ├── App.tsx                     # Root component
+│   │   ├── config/
+│   │   │   └── api.ts                  # API configuration
+│   │   ├── App.tsx                     # Root component with routing
 │   │   └── main.tsx                    # React entry point
 │   ├── package.json
 │   ├── vite.config.ts
-│   └── .env.example
-├── README.md
-└── API_KEY_SETUP.md
+│   ├── tailwind.config.js
+│   └── firebase.json                   # Firebase hosting config
+└── README.md
 ```
+
+## 🚀 Live Deployment
+
+### **Production URLs:**
+- **Frontend:** https://benchmind-app.web.app/ (Firebase Hosting)
+- **Backend API:** https://benchmind.onrender.com (Render)
+- **API Docs:** https://benchmind.onrender.com/docs
+
+### **Architecture:**
+- **Frontend:** React app deployed on Firebase with automatic CI/CD
+- **Backend:** FastAPI server deployed on Render with PostgreSQL database
+- **Database:** Managed PostgreSQL on Render with automatic migrations
+- **Authentication:** JWT tokens with OTP email verification
+- **Session Management:** User-isolated data with full CRUD operations
+
+### **CI/CD Pipeline:**
+- **GitHub Actions** for automated testing and deployment
+- **Path-based triggers** - only deploys changed components (frontend/backend)
+- **Automatic migrations** on backend deployment
+- **Environment-specific configurations**
 
 ## 🤝 Contributing
 
