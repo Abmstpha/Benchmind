@@ -34,6 +34,7 @@ class BenchmarkRun(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id = Column(String, unique=True, nullable=False, index=True)  # The run_id from job_store
     user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False)
+    project_name = Column(String, nullable=False)  # User-friendly project name
     task_description = Column(String, nullable=False)
     selected_models = Column(JSON, nullable=False)  # List of model IDs
     constraints = Column(JSON)

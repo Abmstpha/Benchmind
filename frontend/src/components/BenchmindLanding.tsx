@@ -9,6 +9,7 @@ import { ResultCards } from './ResultCards';
 
 export const BenchmindLanding: React.FC = () => {
   const { user } = useAuth();
+  const [projectName, setProjectName] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [selectedModels, setSelectedModels] = useState<string[]>(['', '', '']);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
@@ -70,7 +71,7 @@ export const BenchmindLanding: React.FC = () => {
   };
 
   const startRun = async () => {
-    if (!taskDescription.trim()) return;
+    if (!projectName.trim() || !taskDescription.trim()) return;
     
     const models = selectedModels.filter(m => m.trim() !== '');
     if (models.length === 0) return;
@@ -86,6 +87,7 @@ export const BenchmindLanding: React.FC = () => {
           'Authorization': `Bearer ${user?.token}`
         },
         body: JSON.stringify({
+          project_name: projectName,
           task_description: taskDescription,
           selected_models: models,
           constraints: {
@@ -160,6 +162,21 @@ export const BenchmindLanding: React.FC = () => {
             <p className="text-sm text-gray-600">
               Environment-first AI model selection • quality • latency • cost • CO₂
             </p>
+          </div>
+
+          {/* Project Name */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Project Name
+            </label>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+              placeholder="e.g., Movie Recommendation System"
+              disabled={runState.kind === 'starting'}
+            />
           </div>
 
           {/* Task Description */}
@@ -283,11 +300,12 @@ export const BenchmindLanding: React.FC = () => {
             onClick={startRun}
             disabled={
               runState.kind === 'starting' ||
+              !projectName.trim() ||
               !taskDescription.trim() ||
               selectedModels[0] === ''
             }
             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-              runState.kind === 'starting' || !taskDescription.trim() || selectedModels[0] === ''
+              runState.kind === 'starting' || !projectName.trim() || !taskDescription.trim() || selectedModels[0] === ''
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}

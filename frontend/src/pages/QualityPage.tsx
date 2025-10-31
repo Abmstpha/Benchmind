@@ -3,10 +3,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 interface BenchmarkRun {
   run_id: string;
+  project_name: string;
   task_description: string;
   selected_models: string[];
   quality_insights: any;
@@ -15,14 +16,15 @@ interface BenchmarkRun {
 }
 
 export const QualityPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [runs, setRuns] = useState<BenchmarkRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [deletingRun, setDeletingRun] = useState<string | null>(null);
 
-  const handleDelete = async (runId: string, taskDescription: string) => {
-    if (!confirm(`Are you sure you want to delete this benchmark run?\n\n"${taskDescription}"\n\nThis action cannot be undone.`)) {
+  const handleDelete = async (runId: string, projectName: string) => {
+    if (!confirm(`Are you sure you want to delete this benchmark run?\n\n"${projectName}"\n\nThis action cannot be undone.`)) {
       return;
     }
 
@@ -88,6 +90,21 @@ export const QualityPage: React.FC = () => {
 
     fetchAllRuns();
   }, []);
+
+  // Auto-expand if coming from another page with expand=true
+  useEffect(() => {
+    const shouldExpand = searchParams.get('expand') === 'true';
+    const runId = searchParams.get('run_id');
+    
+    if (shouldExpand && runId && runs.length > 0) {
+      // Find the run with matching ID and expand it
+      const targetRun = runs.find(run => run.run_id === runId);
+      if (targetRun) {
+        setExpandedRun(runId);
+        console.log('🎯 Auto-expanding run:', runId);
+      }
+    }
+  }, [runs, searchParams]);
 
   if (loading) {
     return <div className="max-w-4xl mx-auto p-6">Loading...</div>;
@@ -160,9 +177,7 @@ export const QualityPage: React.FC = () => {
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {run.task_description.length > 60 
-                          ? run.task_description.substring(0, 60) + '...' 
-                          : run.task_description}
+                        {run.project_name}
                       </h3>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -184,7 +199,7 @@ export const QualityPage: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card expansion
-                        handleDelete(run.run_id, run.task_description);
+                        handleDelete(run.run_id, run.project_name);
                       }}
                       disabled={deletingRun === run.run_id}
                       className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
@@ -264,13 +279,13 @@ export const QualityPage: React.FC = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-3 mt-6">
                     <Link
-                      to={`/analytics?run_id=${run.run_id}`}
+                      to={`/analytics?run_id=${run.run_id}&expand=true`}
                       className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
                     >
                       View Analytics
                     </Link>
                     <Link
-                      to={`/efficiency?run_id=${run.run_id}`}
+                      to={`/efficiency?run_id=${run.run_id}&expand=true`}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
                     >
                       Efficiency Insights

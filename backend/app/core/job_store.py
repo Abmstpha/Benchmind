@@ -38,6 +38,7 @@ class RunStep:
 class BenchmarkRun:
     run_id: str
     status: RunStatus
+    project_name: str
     task_description: str
     selected_models: List[str]
     constraints: Dict[str, Any]
@@ -76,6 +77,7 @@ class JobStore:
     
     def create_run(
         self,
+        project_name: str,
         task_description: str,
         selected_models: List[str],
         constraints: Dict[str, Any],
@@ -99,6 +101,7 @@ class JobStore:
         run = BenchmarkRun(
             run_id=run_id,
             status=RunStatus.QUEUED,
+            project_name=project_name,
             task_description=task_description,
             selected_models=selected_models,
             constraints=constraints,

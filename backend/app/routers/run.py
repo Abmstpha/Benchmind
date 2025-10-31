@@ -27,6 +27,7 @@ logger.setLevel(logging.DEBUG)
 
 # Request/Response models
 class RunRequest(BaseModel):
+    project_name: str
     task_description: str
     selected_models: List[str]
     constraints: Optional[Dict[str, Any]] = None
@@ -42,17 +43,14 @@ class RunResponse(BaseModel):
 async def start_run(
     request: RunRequest,
     background_tasks: BackgroundTasks,
-    token_data: dict = Depends(get_current_user),
+    profile: Profile = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Start a new benchmark run.
     Returns run_id immediately and processes in background.
     """
-    user_email = token_data.get("sub")
-    
-    # Check credits
-    profile = db.query(Profile).filter(Profile.email == user_email).first()
+    # Check credits (profile is already fetched by get_current_user)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     
@@ -66,7 +64,8 @@ async def start_run(
     profile.credits -= 1
     db.commit()
     
-    logger.info(f"🚀 Starting new run for {user_email}")
+    logger.info(f"🚀 Starting new run for {profile.email}")
+    logger.info(f"Project: {request.project_name}")
     logger.info(f"Task: {request.task_description}")
     logger.info(f"Models: {request.selected_models}")
     
@@ -84,11 +83,12 @@ async def start_run(
     
     # Create run in job store
     run_id = job_store.create_run(
+        project_name=request.project_name,
         task_description=request.task_description,
         selected_models=request.selected_models,
         constraints=constraints,
         assumptions=assumptions,
-        user_email=user_email
+        user_email=profile.email
     )
     
     # Start background processing
@@ -301,6 +301,7 @@ Based on environmental impact and quality metrics, here are the optimal models f
             db_run = BenchmarkRun(
                 run_id=run_id,
                 user_id=user.id,
+                project_name=run.project_name,
                 task_description=run.task_description,
                 selected_models=run.selected_models,
                 constraints=run.constraints,
@@ -446,12 +447,13 @@ async def get_user_history(
         "runs": [
             {
                 "run_id": run.run_id,
+                "project_name": run.project_name,
                 "task_description": run.task_description,
                 "selected_models": run.selected_models,
-                "recommendation": run.recommendation,  # ← ADD THIS!
-                "quality_insights": run.quality_insights,  # ← ADD THIS!
-                "analytics_data": run.analytics_data,  # ← ADD THIS!
-                "benchmark_results": run.benchmark_results,  # ← ADD THIS!
+                "recommendation": run.recommendation,
+                "quality_insights": run.quality_insights,
+                "analytics_data": run.analytics_data,
+                "benchmark_results": run.benchmark_results,
                 "status": run.status,
                 "created_at": run.created_at.isoformat(),
                 "completed_at": run.completed_at.isoformat() if run.completed_at else None
