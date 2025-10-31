@@ -192,6 +192,11 @@ async def get_ai_recommendation(
                 task_desc = f"Benchmarking for: {request.task_description}"
                 test_prompt = f"Analyze this text: {request.task_description}"
                 
+                consultant_logger.info(f"🔧 [BENCHMARK AGENT] Calling tool with:")
+                consultant_logger.info(f"   Models: {models_str}")
+                consultant_logger.info(f"   Task: {task_desc}")
+                consultant_logger.info(f"   Prompt: {test_prompt[:100]}...")
+                
                 loop = asyncio.get_event_loop()
                 tool_result = await loop.run_in_executor(
                     None,
@@ -202,15 +207,31 @@ async def get_ai_recommendation(
                     "medium"
                 )
                 
+                consultant_logger.info(f"🔍 [BENCHMARK AGENT] Raw tool result type: {type(tool_result)}")
+                consultant_logger.info(f"🔍 [BENCHMARK AGENT] Raw tool result length: {len(str(tool_result)) if tool_result else 0}")
+                
                 if isinstance(tool_result, str):
-                    parsed_results = json.loads(tool_result)
-                    consultant_logger.info(f"✅ [BENCHMARK AGENT] Completed: {len(parsed_results)} results")
-                    return parsed_results
+                    try:
+                        parsed_results = json.loads(tool_result)
+                        consultant_logger.info(f"✅ [BENCHMARK AGENT] Successfully parsed {len(parsed_results)} results")
+                        
+                        # Log the actual data we got
+                        for i, result in enumerate(parsed_results):
+                            consultant_logger.info(f"   Result {i+1}: {result.get('model_name', 'Unknown')} - {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
+                        
+                        return parsed_results
+                    except json.JSONDecodeError as je:
+                        consultant_logger.error(f"❌ [BENCHMARK AGENT] JSON decode error: {je}")
+                        consultant_logger.error(f"❌ [BENCHMARK AGENT] Raw result: {tool_result[:500]}...")
+                        return []
                 else:
                     consultant_logger.error(f"❌ [BENCHMARK AGENT] Invalid result type: {type(tool_result)}")
+                    consultant_logger.error(f"❌ [BENCHMARK AGENT] Result content: {str(tool_result)[:200]}...")
                     return []
             except Exception as e:
                 consultant_logger.error(f"❌ [BENCHMARK AGENT] FAILED: {e}")
+                import traceback
+                consultant_logger.error(f"❌ [BENCHMARK AGENT] Traceback: {traceback.format_exc()}")
                 return []
         
         web_insights, benchmark_results = await asyncio.gather(
@@ -224,25 +245,75 @@ async def get_ai_recommendation(
         consultant_logger.info(f"🔍 Search insights: {len(web_insights)} chars")
                 
         if not benchmark_results:
-            consultant_logger.warning("⚠️ No benchmark results, using fallback")
-            consultant_logger.warning("⚠️ Using fallback data extraction from recommendation text")
-            import re
-            cost_match = re.search(r'\$([0-9.]+)', recommendation)
-            latency_match = re.search(r'([0-9.]+)\s*ms', recommendation)
-            co2_match = re.search(r'([0-9.]+)\s*grams?', recommendation)
-            energy_match = re.search(r'([0-9.]+)\s*Wh', recommendation)
+            consultant_logger.warning("⚠️ No benchmark results from agent, attempting direct tool call fallback")
             
-            mock_result = {
-                "model_id": request.selected_models[0] if request.selected_models else "mistral-tiny",
-                "model_name": request.selected_models[0].replace('-', ' ').title() if request.selected_models else "Mistral Tiny",
-                "cost_usd": float(cost_match.group(1)) if cost_match else 0.00001925,
-                "latency_ms": float(latency_match.group(1)) if latency_match else 618,
-                "co2_g": float(co2_match.group(1)) if co2_match else 0.0608,
-                "energy_wh": float(energy_match.group(1)) if energy_match else 0.0996,
-                "tokens_used": 100
-            }
-            benchmark_results = [mock_result]
-            consultant_logger.info(f"✅ Created fallback benchmark result: {mock_result}")
+            # Try calling the benchmarking tool directly as a last resort
+            try:
+                from ..tools.tools import benchmark_models_for_task
+                import json
+                
+                models_str = ",".join(request.selected_models)
+                task_desc = f"Benchmarking for: {request.task_description}"
+                test_prompt = f"Analyze this text: {request.task_description}"
+                
+                consultant_logger.info("🔧 [FALLBACK] Calling benchmarking tool directly...")
+                direct_result = benchmark_models_for_task(task_desc, models_str, test_prompt, "medium")
+                
+                if isinstance(direct_result, str):
+                    fallback_results = json.loads(direct_result)
+                    consultant_logger.info(f"✅ [FALLBACK] Successfully parsed {len(fallback_results)} results from direct tool call")
+                    
+                    # Log the actual data we extracted
+                    for result in fallback_results:
+                        consultant_logger.info(f"   📊 {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
+                    
+                    benchmark_results = fallback_results
+                else:
+                    raise ValueError(f"Invalid result type: {type(direct_result)}")
+                    
+            except Exception as fallback_error:
+                consultant_logger.error(f"❌ [FALLBACK] Direct tool call also failed: {fallback_error}")
+                
+                # Try to fetch recent data from database for these models
+                consultant_logger.warning("⚠️ [FALLBACK] Attempting to fetch recent data from database...")
+                try:
+                    from ..db.database import SessionLocal
+                    from ..db.models import EcoLogitsMetrics
+                    from sqlalchemy import desc
+                    
+                    db = SessionLocal()
+                    recent_results = []
+                    
+                    for model_id in request.selected_models:
+                        # Get the most recent benchmark for this model
+                        recent_metric = db.query(EcoLogitsMetrics).filter(
+                            EcoLogitsMetrics.model_id == model_id
+                        ).order_by(desc(EcoLogitsMetrics.id)).first()
+                        
+                        if recent_metric:
+                            recent_results.append({
+                                "model_id": recent_metric.model_id,
+                                "model_name": recent_metric.model_name,
+                                "cost_usd": float(recent_metric.cost_usd),
+                                "latency_ms": recent_metric.latency_ms,
+                                "co2_g": float(recent_metric.co2_g),
+                                "energy_wh": float(recent_metric.energy_wh),
+                                "tokens_used": 100  # Approximate
+                            })
+                            consultant_logger.info(f"   📊 Found recent data for {model_id}: {recent_metric.energy_wh} Wh, {recent_metric.co2_g} g CO₂")
+                    
+                    db.close()
+                    
+                    if recent_results:
+                        benchmark_results = recent_results
+                        consultant_logger.info(f"✅ [FALLBACK] Using {len(recent_results)} recent database records")
+                    else:
+                        consultant_logger.error("❌ [FALLBACK] No recent data found in database")
+                        benchmark_results = []  # Return empty instead of fake data
+                        
+                except Exception as db_error:
+                    consultant_logger.error(f"❌ [FALLBACK] Database lookup also failed: {db_error}")
+                    benchmark_results = []  # Return empty instead of fake data
         
         consultant_logger.info("🎉 DIRECT REACT AGENT REQUEST COMPLETED")
         

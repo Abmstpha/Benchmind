@@ -511,9 +511,15 @@ def save_run_to_database(run_id: str, user: Profile, run, recommendation, qualit
             
     except Exception as e:
         logger.error(f"❌ Failed to save run to database: {e}")
-        db.rollback()
+        try:
+            db.rollback()
+        except Exception as rollback_error:
+            logger.error(f"⚠️ Rollback also failed: {rollback_error}")
     finally:
-        db.close()
+        try:
+            db.close()
+        except Exception as close_error:
+            logger.error(f"⚠️ Database close error (non-critical): {close_error}")
 
 
 @router.get("/{run_id}/events")

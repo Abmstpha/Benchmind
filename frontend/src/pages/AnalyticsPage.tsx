@@ -4,6 +4,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ScatterChart,
+  Scatter,
+  Cell
+} from 'recharts';
 
 interface BenchmarkRun {
   run_id: string;
@@ -128,33 +146,343 @@ export const AnalyticsPage: React.FC = () => {
     );
   }
 
-  // Simple bar chart component for EcoLogits data
-  const SimpleBarChart = ({ data, title, yLabel, color }: { data: any[], title: string, yLabel: string, color: string }) => {
-    if (!data || data.length === 0) return null;
+  // Comprehensive BenchmarkCharts component (inspired by old charts)
+  const BenchmarkCharts = ({ results }: { results: any[] }) => {
+    console.log('BenchmarkCharts received results:', results);
     
-    const maxValue = Math.max(...data.map(d => parseFloat(d.value)));
+    if (!results || results.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          <p>No benchmark data available. Please run a benchmark first.</p>
+        </div>
+      );
+    }
     
+    // Transform data for different chart types
+    const chartData = results.map(result => ({
+      name: (result.model_name || result.model_id || result.model || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
+      latency: Math.round(result.latency_ms || 0),
+      cost: (result.cost_usd || 0) * 1000000, // Convert to micro-dollars for better display
+      co2: parseFloat(result.co2_g) || 0, // Ensure CO₂ values are numbers (e.g., 0.280)
+      energy: result.energy_wh || 0, // Keep original energy values
+      tokens: result.tokens_used || 0
+    }));
+    
+    console.log('Transformed chartData:', chartData);
+    console.log('CO₂ values:', chartData.map(d => ({ name: d.name, co2: d.co2 })));
+
+    // Calculate efficiency scores for model-based coloring (lower is better for cost, latency, co2, energy)
+    const modelsWithScores = chartData.map(model => {
+      // Efficiency score: lower cost + lower co2 + lower latency + lower energy = better
+      const efficiencyScore = model.cost + model.co2 * 1000 + model.latency + model.energy * 100;
+      return { ...model, efficiencyScore };
+    });
+    
+    // Sort by efficiency (best to worst)
+    const sortedModels = [...modelsWithScores].sort((a, b) => a.efficiencyScore - b.efficiencyScore);
+    
+    // Assign colors based on efficiency ranking
+    const getModelColor = (modelName: string) => {
+      const index = sortedModels.findIndex(m => m.name === modelName);
+      if (index === 0) return "#10B981"; // Green - Most efficient
+      if (index === sortedModels.length - 1) return "#EF4444"; // Red - Least efficient  
+      return "#F59E0B"; // Yellow/Orange - Middle efficiency
+    };
+
+    // Use the same chartData that works for bar charts and table
+    const maxLatency = Math.max(...chartData.map(d => d.latency));
+    const maxCost = Math.max(...chartData.map(d => d.cost));
+    const maxCO2 = Math.max(...chartData.map(d => d.co2));
+    
+    // Create radar data using the same working chartData
+    const normalizedRadarData = chartData.map(item => ({
+      model: item.name,
+      Speed: Math.round((1 - item.latency / maxLatency) * 100), // Invert latency (lower is better)
+      'Cost Efficiency': Math.round((1 - item.cost / maxCost) * 100), // Invert cost
+      'Green Score': Math.round((1 - item.co2 / maxCO2) * 100) // Invert CO2
+    }));
+
     return (
-      <div className="bg-white rounded-lg border p-6">
-        <h4 className="font-semibold text-gray-900 mb-4">{title}</h4>
-        <div className="space-y-3">
-          {data.map((item, index) => (
-            <div key={index} className="flex items-center">
-              <div className="w-24 text-sm text-gray-600 truncate">{item.model}</div>
-              <div className="flex-1 mx-3">
-                <div className="bg-gray-200 rounded-full h-4 relative">
-                  <div 
-                    className={`${color} h-4 rounded-full flex items-center justify-end pr-2`}
-                    style={{ width: `${(parseFloat(item.value) / maxValue) * 100}%` }}
-                  >
-                    <span className="text-xs text-white font-medium">{item.value}</span>
+      <div className="space-y-8">
+        {/* Cost vs Environmental Impact */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost vs Environmental Impact</h3>
+          
+          {/* Custom Legend */}
+          <div className="flex flex-wrap gap-4 mb-4 justify-center">
+            {chartData.map((entry) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: getModelColor(entry.name) }}
+                ></div>
+                <span className="text-sm text-gray-700">{entry.name}</span>
+              </div>
+            ))}
+          </div>
+
+          <ResponsiveContainer width="100%" height={400}>
+            <ScatterChart data={chartData} margin={{ top: 20, right: 20, bottom: 60, left: 80 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                type="number" 
+                dataKey="cost" 
+                name="Cost" 
+                domain={['dataMin - 10', 'dataMax + 10']}
+                label={{ value: 'Cost (micro-USD) - Lower is Better', position: 'insideBottom', offset: -10 }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="co2" 
+                name="CO₂" 
+                domain={[0, 'dataMax']}
+                label={{ value: 'CO₂ Emissions(g)', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length > 0) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+                        <p className="font-medium text-gray-900">{data.name}</p>
+                        <p className="text-sm text-gray-600">
+                          <span className="text-blue-600">Cost:</span> ${data.cost.toFixed(1)}μ
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="text-red-600">CO₂:</span> {data.co2}g
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Scatter 
+                name="Models"
+                data={chartData} 
+                fill="#8884d8"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getModelColor(entry.name)} />
+                ))}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Multi-dimensional Radar Chart */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">🕸️ Multi-Dimensional Performance</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <RadarChart data={normalizedRadarData}>
+              <PolarGrid />
+              <PolarAngleAxis dataKey="model" />
+              <PolarRadiusAxis domain={[0, 100]} tickCount={5} />
+              <Radar
+                name="Speed"
+                dataKey="Speed"
+                stroke="#3B82F6"
+                fill="#3B82F6"
+                fillOpacity={0.1}
+                strokeWidth={2}
+              />
+              <Radar
+                name="Cost Efficiency"
+                dataKey="Cost Efficiency"
+                stroke="#EC4899"
+                fill="#EC4899"
+                fillOpacity={0.1}
+                strokeWidth={2}
+              />
+              <Radar
+                name="Green Score"
+                dataKey="Green Score"
+                stroke="#991B1B"
+                fill="#991B1B"
+                fillOpacity={0.1}
+                strokeWidth={2}
+              />
+              <Tooltip />
+              <Legend />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Performance Metrics Bar Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Latency Comparison */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">⚡ Latency Comparison</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`${value}ms`, 'Latency']} />
+                <Bar dataKey="latency" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getModelColor(entry.name)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Cost Efficiency */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost Efficiency</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`$${(Number(value)/1000000).toFixed(6)}`, 'Cost per inference']} />
+                <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getModelColor(entry.name)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Environmental Impact */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">🌱 Environmental Impact</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'co2' ? `${value}g CO₂` : `${value}Wh`,
+                    name === 'co2' ? 'CO₂ Emissions' : 'Energy Usage'
+                  ]}
+                />
+                <Bar dataKey="co2" fill="#DC2626" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="energy" fill="#059669" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* EcoLogits Insights */}
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">🌱 EcoLogits Environmental Insights</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {results.map((result, index) => {
+              const energyEquivalent = ((result.energy_wh || 0) * 1000).toFixed(1); // Convert to mWh
+              const co2Equivalent = ((result.co2_g || 0) * 1000).toFixed(1); // Convert to mg
+              
+              return (
+                <div key={index} className="bg-white p-4 rounded-lg shadow-sm">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    {result.model_name || result.model_id || result.model || 'Unknown'}
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Energy:</span>
+                      <span className="font-medium text-green-700">{(result.energy_wh || 0).toFixed(3)} Wh</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">CO₂:</span>
+                      <span className="font-medium text-red-700">{(result.co2_g || 0).toFixed(3)} g</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Latency:</span>
+                      <span className="font-medium text-blue-700">{Math.round(result.latency_ms || 0)}ms</span>
+                    </div>
+                    <div className="pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-500">
+                        ≈ {energyEquivalent}mWh energy • {co2Equivalent}mg CO₂
+                      </p>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-800">
+              <strong>💡 EcoLogits Methodology:</strong> Real environmental impact data measured using ISO 14044 standards. 
+              Energy consumption and CO₂ emissions are calculated based on actual model inference and data center efficiency.
+            </p>
+          </div>
+          
+          {/* Environmental Impact Comparison */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
+              <div className="space-y-1 text-sm">
+                {results.map((result, index) => {
+                  const ledMinutes = ((result.energy_wh || 0) / 0.01 * 60).toFixed(1); // LED bulb equivalent
+                  return (
+                    <div key={index} className="flex justify-between">
+                      <span className="text-gray-600">{(result.model_name || result.model || '').replace('Mistral ', '')}:</span>
+                      <span className="text-green-700">≈ {ledMinutes}min LED bulb</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
+            
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h4 className="font-medium text-gray-900 mb-2">🌍 Carbon Footprint</h4>
+              <div className="space-y-1 text-sm">
+                {results.map((result, index) => {
+                  const carMeters = ((result.co2_g || 0) / 120 * 1000).toFixed(1); // Car driving equivalent (120g CO2/km)
+                  return (
+                    <div key={index} className="flex justify-between">
+                      <span className="text-gray-600">{(result.model_name || result.model || '').replace('Mistral ', '')}:</span>
+                      <span className="text-red-700">≈ {carMeters}m car driving</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="text-xs text-gray-500 mt-2">{yLabel}</div>
+
+        {/* Performance Summary Table */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">📋 Performance Summary</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latency</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CO₂</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Energy</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {results.map((result, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {result.model_name || result.model_id || result.model || 'Unknown'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {Math.round(result.latency_ms || 0)}ms
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${((result.cost_usd || 0) * 1000000).toFixed(2)}μ
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {(result.co2_g || 0).toFixed(3)}g
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {(result.energy_wh || 0).toFixed(3)}Wh
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   };
@@ -267,73 +595,11 @@ export const AnalyticsPage: React.FC = () => {
               {/* Expanded Details */}
               {expandedRun === run.run_id && (run.analytics_data || run.benchmark_results) && (
                 <div className="border-t bg-gray-50 p-6">
-                  {/* Charts Grid */}
+                  {/* Comprehensive Charts */}
                   {run.benchmark_results && run.benchmark_results.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      {/* Energy Chart */}
-                      <SimpleBarChart 
-                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.energy_wh }))}
-                        title="Energy Consumption"
-                        yLabel="Watt-hours (Wh)"
-                        color="bg-yellow-500"
-                      />
-                      
-                      {/* CO2 Chart */}
-                      <SimpleBarChart 
-                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.co2_g }))}
-                        title="CO₂ Emissions"
-                        yLabel="Grams of CO₂"
-                        color="bg-green-500"
-                      />
-                      
-                      {/* Cost Chart */}
-                      <SimpleBarChart 
-                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.cost_usd }))}
-                        title="Cost Analysis"
-                        yLabel="USD per request"
-                        color="bg-blue-500"
-                      />
-                      
-                      {/* Latency Chart (replacing Quality) */}
-                      <SimpleBarChart 
-                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.latency_ms }))}
-                        title="Latency (ms)"
-                        yLabel="Response time (milliseconds)"
-                        color="bg-purple-500"
-                      />
-                    </div>
+                    <BenchmarkCharts results={run.benchmark_results} />
                   )}
 
-                  {/* Metrics Table */}
-                  {run.analytics_data?.series && run.analytics_data.series.length > 0 && (
-                    <div className="bg-white rounded-lg border p-6 mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-4">Performance Metrics</h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Energy (Wh)</th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">CO₂ (g)</th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Latency (ms)</th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost ($)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {run.analytics_data.series.map((item: any, index: number) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.model_name || item.model_id}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.energy_wh}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.co2_g}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.latency_ms}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.cost_usd}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Pareto Frontier */}
                   {run.analytics_data?.pareto && run.analytics_data.pareto.length > 0 && (

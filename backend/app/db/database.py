@@ -4,40 +4,40 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from ..core.config import settings
 
-# Try main database first, fallback to SQLite for development
+# Use only the configured database URL - NO FALLBACK
 SQLALCHEMY_DATABASE_URL = settings.database_url
 
-# If no database URL or connection fails, use local SQLite
 if not SQLALCHEMY_DATABASE_URL:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./benchmind_dev.db"
-    print("⚠️  No DATABASE_URL found, using local SQLite: benchmind_dev.db")
+    raise ValueError("❌ DATABASE_URL is required! Please set it in your .env file.")
 
-try:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
-    # Test the connection
-    with engine.connect() as conn:
-        pass
-    print(f"✅ Connected to database: {SQLALCHEMY_DATABASE_URL}")
-except Exception as e:
-    print(f"❌ Failed to connect to {SQLALCHEMY_DATABASE_URL}: {e}")
-    print("🔄 Falling back to local SQLite database...")
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./benchmind_dev.db"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+print(f"🔍 Setting up database engine: {SQLALCHEMY_DATABASE_URL[:50]}...")
+
+# Create engine with connection timeout and retry settings - but don't test connection yet
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_timeout=30,
+    pool_recycle=3600,
+    pool_pre_ping=True,  # Verify connections before use
+    connect_args={
+        "connect_timeout": 30,
+        "application_name": "benchmind_backend"
+    }
+)
+
+print(f"✅ Database engine configured (will connect on first use)")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
-
-# Create tables if using SQLite (for development)
-if "sqlite" in SQLALCHEMY_DATABASE_URL:
-    print("🔧 Creating SQLite tables...")
-    from . import models  # Import models to register them
-    Base.metadata.create_all(bind=engine)
-    print("✅ SQLite tables created successfully")
 
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        try:
+            db.close()
+        except Exception as e:
+            # Log the error but don't raise it to prevent breaking the response
+            print(f"⚠️ Database cleanup error (non-critical): {e}")
+            pass
