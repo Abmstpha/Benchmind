@@ -19,7 +19,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
     
@@ -39,3 +39,4 @@ jobs:
         projectId: benchmind-app
         channelId: live
         entryPoint: ./frontend
+        target: benchmind-app
