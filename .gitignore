@@ -67,3 +67,5 @@ test_google_search.py
 *.tar.gz
 *.zip
 
+backend/alembic/versions/*.py
+!backend/alembic/versions/.gitkeep
