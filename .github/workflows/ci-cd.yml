@@ -166,47 +166,16 @@ jobs:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
         VITE_ENVIRONMENT: production
 
-  # Deploy to production
-  deploy:
-    needs: [backend-ci, frontend-ci]
+  # Deploy Backend to Render
+  deploy-backend:
+    needs: [changes, backend-ci]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.changes.outputs.backend == 'true'
     
     steps:
-    - uses: actions/checkout@v4
-    
-    # Deploy Backend to Render
     - name: Deploy Backend to Render
-      if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
       run: |
         curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
           -H "Content-Type: application/json" \
           -d '{"clear_cache": false}'
-      
-    # Deploy Frontend to Netlify
-    - name: Setup Node.js for deployment
-      if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: 'frontend/package-lock.json'
-    
-    - name: Build and Deploy Frontend
-      if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
-      working-directory: frontend
-      run: |
-        npm ci
-        npm run build
-        npx netlify-cli deploy --dir=dist --prod --site ${{ secrets.NETLIFY_SITE_ID }}
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        VITE_ENVIRONMENT: production
-
-    - name: Deployment Summary
-      run: |
-        echo "🚀 Deployment completed!"
-        echo "Backend: Deployed to Render"
-        echo "Frontend: Deployed to Netlify"
-        echo "Database: Using Supabase PostgreSQL"
+        echo "✅ Backend deployment triggered"
