@@ -210,6 +210,126 @@ export const BenchmindLanding: React.FC = () => {
               >
                 📄 Doc Summary
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Code Review Assistant");
+                  setTaskDescription("I need an AI model for automated code review that analyzes pull requests, identifies bugs, suggests improvements, and checks for security vulnerabilities. The system should understand multiple programming languages and provide actionable feedback.");
+                }}
+                className="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                💻 Code Review
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Email Classification System");
+                  setTaskDescription("I need an AI model for email classification that automatically categorizes incoming emails as spam, urgent, promotional, or personal. The system should learn from user behavior and adapt to changing email patterns while maintaining high accuracy.");
+                }}
+                className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                📧 Email Filter
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Content Moderation Tool");
+                  setTaskDescription("I need an AI model for content moderation that detects harmful, inappropriate, or policy-violating content across text, images, and videos. The system should handle high volumes while minimizing false positives and supporting multiple languages.");
+                }}
+                className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🛡️ Content Mod
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Medical Diagnosis Assistant");
+                  setTaskDescription("I need an AI model for medical diagnosis assistance that analyzes patient symptoms, medical history, and test results to suggest potential diagnoses and recommend further tests. The system must prioritize patient safety and provide confidence scores.");
+                }}
+                className="px-3 py-1 text-xs bg-teal-100 text-teal-700 rounded-full hover:bg-teal-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🏥 Medical AI
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Financial Fraud Detection");
+                  setTaskDescription("I need an AI model for real-time fraud detection that analyzes transaction patterns, user behavior, and risk factors to identify suspicious activities. The system should minimize false positives while catching sophisticated fraud attempts.");
+                }}
+                className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                💳 Fraud Detection
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Language Translation Service");
+                  setTaskDescription("I need an AI model for multilingual translation that handles business documents, technical manuals, and conversational text. The system should preserve context, handle idioms, and maintain professional tone across 20+ languages.");
+                }}
+                className="px-3 py-1 text-xs bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🌍 Translation
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Smart Home Automation");
+                  setTaskDescription("I need an AI model for intelligent home automation that learns user preferences, predicts needs, and optimizes energy usage. The system should control lighting, temperature, security, and appliances while ensuring privacy and reliability.");
+                }}
+                className="px-3 py-1 text-xs bg-cyan-100 text-cyan-700 rounded-full hover:bg-cyan-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🏠 Smart Home
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Social Media Analytics");
+                  setTaskDescription("I need an AI model for social media sentiment analysis that monitors brand mentions, tracks engagement trends, and identifies influencers. The system should analyze text, images, and videos across platforms while providing real-time insights and alerts.");
+                }}
+                className="px-3 py-1 text-xs bg-violet-100 text-violet-700 rounded-full hover:bg-violet-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                📱 Social Analytics
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Supply Chain Optimizer");
+                  setTaskDescription("I need an AI model for supply chain optimization that predicts demand, manages inventory levels, and identifies potential disruptions. The system should optimize logistics, reduce costs, and ensure timely deliveries while adapting to market changes.");
+                }}
+                className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                📦 Supply Chain
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Voice Assistant for Elderly");
+                  setTaskDescription("I need an AI model for a voice-activated assistant designed for elderly users that helps with medication reminders, emergency calls, and daily tasks. The system should understand natural speech patterns, handle hearing difficulties, and provide compassionate responses.");
+                }}
+                className="px-3 py-1 text-xs bg-rose-100 text-rose-700 rounded-full hover:bg-rose-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🎙️ Elder Care
+              </button>
             </div>
           </div>
 
