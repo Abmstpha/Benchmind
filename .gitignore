@@ -85,5 +85,6 @@ Thumbs.db
 *.tar.gz
 *.zip
 
+# Ignore migration files for security
 backend/alembic/versions/*.py
 !backend/alembic/versions/.gitkeep
