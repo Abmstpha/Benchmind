@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # API Configuration
     app_name: str = "Benchmind API"
-    app_version: str = "0.1.0"
+    app_version: str = "0.1.1"
     app_description: str = "AI Model Evaluation Platform with Green AI Observability"
     
     # Server Configuration
