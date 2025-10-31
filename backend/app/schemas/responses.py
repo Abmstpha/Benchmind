@@ -4,6 +4,8 @@ Response schemas for Benchmind API
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from datetime import datetime
+from uuid import UUID
 
 
 class ModelsResponse(BaseModel):
@@ -38,3 +40,16 @@ class AIConsultantResponse(BaseModel):
                 "consultant_version": "1.0"
             }
         }
+
+
+class ConsultationResponse(BaseModel):
+    """Response schema for a single consultation history entry."""
+    id: UUID
+    task_description: str
+    recommendation_text: Optional[str]
+    benchmark_results: Optional[List[Dict[str, Any]]]
+    web_insights: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

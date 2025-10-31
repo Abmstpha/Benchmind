@@ -24,17 +24,27 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # CORS Configuration
-    cors_origins: List[str] = [
-        "http://localhost:3000", "http://127.0.0.1:3000",
-        "http://localhost:3001", "http://127.0.0.1:3001", 
-        "http://localhost:3002", "http://127.0.0.1:3002",
-        "http://localhost:3003", "http://127.0.0.1:3003"
-    ]
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",")]
     
     # API Keys
     mistral_api_key: str = ""
     gemini_api_key: str = ""  # For main agent
     google_api_key: str = ""  # For search sub-agent
+
+    # Database Configuration
+    database_url: str = ""
+    
+    # JWT Authentication
+    jwt_secret: str = ""
+    jwt_exp_seconds: int = 345600  # 4 days
+    
+    # Email Configuration
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = "noreply@benchmind.ai"
     
     # Model Configuration
     default_gemini_model: str = "models/gemini-2.5-flash"

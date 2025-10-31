@@ -95,7 +95,8 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
             response_text = response['choices'][0]['message']['content']
             
             results.append({
-                "model": get_model_name(model_id),
+                "model_id": model_id,
+                "model_name": get_model_name(model_id),
                 "latency_ms": latency_ms,
                 "cost_usd": cost_usd,
                 "energy_wh": energy_wh,
@@ -112,6 +113,20 @@ def benchmark_models_for_task(user_task: str, selected_models: str, test_prompt:
         return json.dumps({"error": "No valid models found. Please check model names and try again."})
     
     tools_logger.info(f"✅ Benchmarking completed for {len(results)} models")
+    
+    # LOG THE ACTUAL TOOL OUTPUT
+    tools_logger.info("=" * 80)
+    tools_logger.info("⚡ BENCHMARK TOOL OUTPUT (RAW ENVIRONMENTAL DATA):")
+    tools_logger.info("=" * 80)
+    for result in results:
+        tools_logger.info(f"🔹 {result.get('model_name', 'Unknown')}:")
+        tools_logger.info(f"   Energy: {result.get('energy_wh', 0)} Wh")
+        tools_logger.info(f"   CO₂: {result.get('co2_g', 0)} g")
+        tools_logger.info(f"   Latency: {result.get('latency_ms', 0)} ms")
+        tools_logger.info(f"   Cost: ${result.get('cost_usd', 0)}")
+        tools_logger.info(f"   Tokens: {result.get('tokens_used', 0)}")
+    tools_logger.info("=" * 80)
+    
     return json.dumps(results)
 
 

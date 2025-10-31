@@ -11,6 +11,15 @@ const api = axios.create({
   timeout: 700000, // Increase minutes for EcoLogits calls + search agent
 });
 
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('benchmind_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Types matching our backend
 export interface ModelResult {
   model_id: string;

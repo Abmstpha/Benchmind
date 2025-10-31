@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -62,7 +62,13 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, general_exception_handler)
     
     # Include routers
-    from .routers import models, consultant, test_ecologits
+    from .routers import models, consultant, test_ecologits, auth, user, run
+    from .routers import settings as settings_router
+    app.include_router(auth.router)
+    app.include_router(user.router)
+    app.include_router(user.profile_router)
+    app.include_router(settings_router.router)
+    app.include_router(run.router)  # New async run orchestrator
     app.include_router(models.router)
     app.include_router(consultant.router)
     app.include_router(test_ecologits.router)
@@ -76,6 +82,9 @@ def create_app() -> FastAPI:
             "version": settings.app_version,
             "status": "running",
             "endpoints": {
+                "auth_signup": "/auth/signup",
+                "auth_login": "/auth/login",
+                "user_status": "/user/status",
                 "models": "/models",
                 "ai_consultant": "/ai-consultant",
                 "test_ecologits_get": "/test/ecologits-simple",
