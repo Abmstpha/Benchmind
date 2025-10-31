@@ -179,7 +179,7 @@ jobs:
     - name: Deploy Backend to Render
       if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
       run: |
-        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
+        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
           -H "Content-Type: application/json" \
           -d '{"clear_cache": false}'
       
