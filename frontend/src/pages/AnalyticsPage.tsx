@@ -294,11 +294,11 @@ export const AnalyticsPage: React.FC = () => {
                         color="bg-blue-500"
                       />
                       
-                      {/* Quality Chart */}
+                      {/* Latency Chart (replacing Quality) */}
                       <SimpleBarChart 
-                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.quality_score }))}
-                        title="Quality Score"
-                        yLabel="Quality rating (0-1)"
+                        data={run.benchmark_results.map(r => ({ model: r.model_name || r.model_id, value: r.latency_ms }))}
+                        title="Latency (ms)"
+                        yLabel="Response time (milliseconds)"
                         color="bg-purple-500"
                       />
                     </div>
@@ -317,7 +317,6 @@ export const AnalyticsPage: React.FC = () => {
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">CO₂ (g)</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Latency (ms)</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost ($)</th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -328,7 +327,6 @@ export const AnalyticsPage: React.FC = () => {
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.co2_g}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.latency_ms}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.cost_usd}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-mono">{item.quality_score}</td>
                               </tr>
                             ))}
                           </tbody>

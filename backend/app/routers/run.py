@@ -6,8 +6,10 @@ Handles POST /api/run and GET /api/run/{run_id}/events (SSE).
 import asyncio
 import json
 import logging
+from datetime import datetime
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -102,6 +104,17 @@ async def process_run(run_id: str, user: Profile):
     Background task that processes the benchmark run.
     Updates job_store with progress at each step.
     """
+    # Use asyncio.shield to prevent cancellation when client disconnects
+    try:
+        await asyncio.shield(_process_run_inner(run_id, user))
+    except Exception as e:
+        logger.error(f"❌ Critical failure in shielded process_run {run_id}: {e}")
+        job_store.update_status(run_id, RunStatus.ERROR)
+
+async def _process_run_inner(run_id: str, user: Profile):
+    """
+    Inner function containing the actual processing logic, shielded from cancellation.
+    """
     try:
         # Create database session for background task
         from ..db.database import SessionLocal
@@ -149,81 +162,196 @@ Constraints: {run.constraints}
 Assumptions: {run.assumptions}
 """
             
-            # Run 3 parallel processes
-            from ..services.benchmark_service import BenchmarkService
+            # Run the REAL agent to get proper recommendations
+            from ..routers.consultant import react_agent
             from ..services.google_search_service import GoogleSearchService
             
-            benchmark_service = BenchmarkService()
             search_service = GoogleSearchService()
             
-            # Process 1: Direct benchmark tool call (instant)
-            async def fetch_green_insights():
-                job_store.update_step(run_id, 'fetch_green_insights', StepStatus.RUNNING, 0)
+            # Process 1: Run REAL agent for efficiency recommendation (no quality!)
+            if react_agent:
+                logger.info("🤖 Running ReAct agent for efficiency analysis...")
                 try:
-                    results = await benchmark_service.benchmark_models(
-                        task_description=run.task_description,
-                        model_ids=run.selected_models
+                    # Create proper agent prompt
+                    agent_prompt = f"""
+Task: {run.task_description}
+Models to benchmark: {', '.join(run.selected_models)}
+
+Please benchmark these models and provide a detailed efficiency recommendation based ONLY on:
+- Energy consumption (Wh)
+- CO₂ emissions (g)
+- Latency (ms) 
+- Cost (USD)
+
+Do NOT assess quality. Focus on environmental impact and efficiency trade-offs.
+"""
+                    
+                    # Run the agent using Runner (correct ADK pattern)
+                    from google.adk.runners import Runner
+                    from google.adk.sessions.in_memory_session_service import InMemorySessionService
+                    from google.genai import types
+                    
+                    session_service = InMemorySessionService()
+                    session = await session_service.create_session(user_id='benchmind', app_name='benchmind')
+                    runner = Runner(agent=react_agent, session_service=session_service, app_name='benchmind')
+                    
+                    message = types.Content(
+                        role='user',
+                        parts=[types.Part.from_text(text=agent_prompt)]
                     )
-                    job_store.update_step(run_id, 'fetch_green_insights', StepStatus.DONE, 100)
-                    return results
+                    
+                    recommendation_text = ""
+                    async for event in runner.run_async(
+                        new_message=message,
+                        user_id='benchmind',
+                        session_id=session.id
+                    ):
+                        if hasattr(event, 'content') and event.content:
+                            if hasattr(event.content, 'parts') and event.content.parts:
+                                for part in event.content.parts:
+                                    if hasattr(part, 'text') and part.text:
+                                        recommendation_text += part.text
+                    
+                    logger.info(f"✅ Agent recommendation received: {len(recommendation_text)} characters")
+                    
+                    # LOG THE ACTUAL AGENT OUTPUT
+                    logger.info("=" * 80)
+                    logger.info("🤖 EFFICIENCY AGENT OUTPUT (WHAT GETS SAVED TO DB):")
+                    logger.info("=" * 80)
+                    logger.info(recommendation_text)
+                    logger.info("=" * 80)
+                    
+                    # Parse any tool results from agent execution
+                    benchmark_result = {
+                        "recommendation_text": recommendation_text,
+                        "benchmark_results": [],  # Will be filled by parsing agent output
+                        "summary": "Efficiency analysis completed by ReAct agent"
+                    }
+                    
                 except Exception as e:
-                    job_store.update_step(run_id, 'fetch_green_insights', StepStatus.ERROR, 0)
+                    logger.error(f"❌ Agent execution failed: {e}")
+                    # Fallback to empty result
+                    benchmark_result = {
+                        "recommendation_text": "Agent analysis failed. Please try again.",
+                        "benchmark_results": [],
+                        "summary": "Analysis failed"
+                    }
+            else:
+                logger.error("❌ ReAct agent not available")
+                benchmark_result = {
+                    "recommendation_text": "Agent not available. Please check configuration.",
+                    "benchmark_results": [],
+                    "summary": "Agent unavailable"
+                }
+            
+            # Process 1: Get efficiency insights from agent
+            async def fetch_green_insights():
+                try:
+                    from ..routers.consultant import react_agent
+                    if react_agent:
+                        # Use the ReAct agent directly
+                        from google.adk.runners import Runner
+                        from google.adk.sessions.in_memory_session_service import InMemorySessionService
+                        from google.genai import types
+                        
+                        session_service = InMemorySessionService()
+                        session = await session_service.create_session(user_id='benchmind_user', app_name='benchmind')
+                        runner = Runner(agent=react_agent, session_service=session_service, app_name='benchmind')
+                        
+                        # Create the prompt for efficiency analysis
+                        prompt = f"""Analyze the efficiency of these AI models for this task:
+Task: {run.task_description}
+Models: {', '.join(run.selected_models)}
+
+Please benchmark these models and provide efficiency recommendations based on environmental impact, cost, and performance."""
+                        
+                        # Run the agent
+                        content = types.Content(parts=[types.Part.from_text(text=prompt)])
+                        
+                        # Google ADK Runner returns an async generator, not a direct response
+                        recommendation_text = ""
+                        async for event in runner.run_async(
+                            new_message=content,
+                            user_id='benchmind_user',
+                            session_id=session.id
+                        ):
+                            if hasattr(event, 'content') and event.content:
+                                if hasattr(event.content, 'parts') and event.content.parts:
+                                    for part in event.content.parts:
+                                        if hasattr(part, 'text') and part.text:
+                                            recommendation_text += part.text
+                        
+                        return {
+                            "recommendation_text": recommendation_text,
+                            "benchmark_results": [],
+                            "summary": "Agent analysis completed"
+                        }
+                    
+                    return {
+                        "recommendation_text": "Agent not available",
+                        "benchmark_results": [],
+                        "summary": "Agent unavailable"
+                    }
+                except Exception as e:
                     raise e
             
-            # Process 2: Google search for quality analysis (parallel)
+            # Process 2: Google search for quality analysis
             async def analyze_quality():
-                job_store.update_step(run_id, 'analyze_quality', StepStatus.RUNNING, 0)
                 try:
                     quality_analysis = await search_service.analyze_quality(
                         task_description=run.task_description,
                         model_ids=run.selected_models
                     )
-                    job_store.update_step(run_id, 'analyze_quality', StepStatus.DONE, 100)
                     return quality_analysis
                 except Exception as e:
-                    job_store.update_step(run_id, 'analyze_quality', StepStatus.ERROR, 0)
                     raise e
             
-            # Process 3: Generate graphs (instant once data available)
-            async def generate_graphs(benchmark_results):
-                job_store.update_step(run_id, 'show_results', StepStatus.RUNNING, 0)
-                # Graph generation is instant
-                job_store.update_step(run_id, 'show_results', StepStatus.DONE, 100)
-                return {"graphs": "generated"}
+            # Step 1: Get efficiency insights (fast)
+            job_store.update_step(run_id, 'fetch_green_insights', StepStatus.RUNNING, 0)
+            benchmark_results = await fetch_green_insights()
+            job_store.update_step(run_id, 'fetch_green_insights', StepStatus.DONE, 100)
             
-            # Run all 3 processes in parallel
-            green_task = asyncio.create_task(fetch_green_insights())
-            quality_task = asyncio.create_task(analyze_quality())
+            # Step 2: Analyze quality via internet search (slow - ~1 minute)
+            job_store.update_step(run_id, 'analyze_quality', StepStatus.RUNNING, 0)
+            quality_analysis_result = await analyze_quality()
+            job_store.update_step(run_id, 'analyze_quality', StepStatus.DONE, 100)
             
-            # Wait for green insights first (should be instant)
-            benchmark_results = await green_task
+            # Step 3: Generate graphs (instant)
+            job_store.update_step(run_id, 'show_results', StepStatus.RUNNING, 0)
+            graphs = {"graphs": "generated"}  # Graph generation is instant
+            job_store.update_step(run_id, 'show_results', StepStatus.DONE, 100)
             
-            # Generate graphs immediately after benchmark data
-            graphs_task = asyncio.create_task(generate_graphs(benchmark_results))
-            
-            # Wait for both quality analysis and graphs
-            quality_analysis, graphs = await asyncio.gather(quality_task, graphs_task)
-            
-            # Combine results
-            recommendation_text = f"""
-## Green AI Analysis
-{benchmark_results.get('summary', 'EcoLogits analysis completed')}
-
-## Quality Analysis  
-{quality_analysis.get('summary', 'Quality benchmarks analyzed')}
-
-## Recommendation
-Based on environmental impact and quality metrics, here are the optimal models for your recommendation system task.
-"""
-            
-            # Extract benchmark data for frontend
+            # Build final recommendation structure
             final_benchmark_results = benchmark_results.get('benchmark_results', [])
+            
+            # Build recommendation
+            recommendation = {
+                "winner": {
+                    "model": final_benchmark_results[0].get('model_name', 'Unknown') if final_benchmark_results else 'Unknown',
+                    "reason": "Most efficient based on environmental metrics"
+                },
+                "shortlist": final_benchmark_results[1:] if len(final_benchmark_results) > 1 else [],
+                "recommendation_text": benchmark_results.get('recommendation_text', 'Environmental analysis completed'),
+                "implementation_notes": [
+                    "Use temperature 0.2 for consistent results",
+                    "Enable streaming to reduce latency",
+                    "Monitor token usage for cost optimization"
+                ],
+                "manifest_url": f"/api/run/{run_id}/manifest"
+            }
+            
+            # Build quality insights
+            quality_insights = {
+                "analysis_text": quality_analysis_result.get('analysis_text', ''),
+                "evidence": quality_analysis_result.get('evidence', []),
+                "summary": quality_analysis_result.get('summary', 'Quality metrics analyzed')
+            }
             
             # Build analytics data
             analytics_data = {
                 "series": final_benchmark_results,
-                "pareto": [run.selected_models[0]] if run.selected_models else [],
-                "assumptions": run.assumptions
+                "pareto": [],  # Will be computed later
+                "summary": f"Analyzed {len(final_benchmark_results)} models"
             }
             
             logger.info(f"✅ All processes complete for {run_id}")
@@ -232,29 +360,6 @@ Based on environmental impact and quality metrics, here are the optimal models f
             logger.error(f"❌ Benchmark failed for {run_id}: {e}")
             job_store.set_error(run_id, f"Benchmark failed: {str(e)}")
             return
-        
-        # Build recommendation
-        recommendation = {
-            "run_id": run_id,
-            "winner": {
-                "model": run.selected_models[0] if run.selected_models else "unknown",
-                "reason": "Best balance of efficiency and environmental impact",
-                "tradeoffs": ["Optimized for low CO2 emissions"]
-            },
-            "shortlist": final_benchmark_results[:3] if final_benchmark_results else [],
-            "implementation_notes": [
-                "Use temperature 0.2 for consistent results",
-                "Enable streaming to reduce latency",
-                "Monitor token usage for cost optimization"
-            ],
-            "manifest_url": f"/api/run/{run_id}/manifest"
-        }
-        
-        # Build quality insights
-        quality_insights = {
-            "evidence": quality_analysis.get('evidence', []),
-            "notes": quality_analysis.get('summary', 'Quality metrics analyzed')
-        }
         
         # Store all results
         job_store.set_results(
@@ -265,105 +370,95 @@ Based on environmental impact and quality metrics, here are the optimal models f
             benchmark_results=final_benchmark_results
         )
         
-        # Save to database for persistence
-        try:
-            from datetime import datetime
-            logger.info("=" * 80)
-            logger.info("💾 SAVING RESULTS TO DATABASE")
-            logger.info("=" * 80)
-            logger.info(f"📋 Run ID: {run_id}")
-            logger.info(f"👤 User: {user.email} (ID: {user.id})")
-            logger.info(f"📝 Task: {run.task_description}")
-            logger.info(f"🤖 Models: {run.selected_models}")
-            
-            # Log recommendation details
-            logger.info(f"🏆 RECOMMENDATION DATA:")
-            logger.info(f"   Winner: {recommendation.get('winner', {}).get('model', 'Unknown')}")
-            logger.info(f"   Reason: {recommendation.get('winner', {}).get('reason', 'N/A')}")
-            logger.info(f"   Shortlist: {len(recommendation.get('shortlist', []))} models")
-            
-            # Log quality insights
-            logger.info(f"🔍 QUALITY INSIGHTS:")
-            logger.info(f"   Evidence points: {len(quality_insights.get('evidence', []))}")
-            logger.info(f"   Summary: {quality_insights.get('summary', 'N/A')}")
-            
-            # Log analytics data
-            logger.info(f"📊 ANALYTICS DATA:")
-            logger.info(f"   Series count: {len(analytics_data.get('series', []))}")
-            logger.info(f"   Pareto models: {analytics_data.get('pareto', [])}")
-            
-            # Log benchmark results
-            logger.info(f"⚡ BENCHMARK RESULTS:")
-            logger.info(f"   Results count: {len(final_benchmark_results)}")
-            for i, result in enumerate(final_benchmark_results[:3]):  # Show first 3
-                logger.info(f"   {i+1}. {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0):.3f} Wh, {result.get('co2_g', 0):.3f} g CO₂")
-            
-            db_run = BenchmarkRun(
-                run_id=run_id,
-                user_id=user.id,
-                project_name=run.project_name,
-                task_description=run.task_description,
-                selected_models=run.selected_models,
-                constraints=run.constraints,
-                assumptions=run.assumptions,
-                recommendation=recommendation,
-                quality_insights=quality_insights,
-                analytics_data=analytics_data,
-                benchmark_results=final_benchmark_results,
-                status="completed",
-                completed_at=datetime.utcnow()
-            )
-            db.add(db_run)
-            logger.info(f"✅ Created BenchmarkRun record")
-            
-            # Also save to consultations table for backward compatibility
-            consultation = Consultation(
-                user_id=user.id,
-                task_description=run.task_description,
-                recommendation_text=recommendation_text,
-                benchmark_results=final_benchmark_results,
-                web_insights=quality_analysis.get('summary', '')
-            )
-            db.add(consultation)
-            logger.info(f"✅ Created Consultation record (legacy)")
-            
-            # Save individual EcoLogits metrics for graph generation
-            logger.info(f"📊 SAVING ECOLOGITS METRICS:")
-            for result in final_benchmark_results:
-                ecologits_metric = EcoLogitsMetrics(
-                    run_id=run_id,
-                    model_id=result.get('model_id', ''),
-                    model_name=result.get('model_name', ''),
-                    energy_wh=str(result.get('energy_wh', 0)),
-                    co2_g=str(result.get('co2_g', 0)),
-                    latency_ms=int(result.get('latency_ms', 0)),
-                    cost_usd=str(result.get('cost_usd', 0)),
-                    quality_score=str(result.get('quality_score', 0))
-                )
-                db.add(ecologits_metric)
-                logger.info(f"   📈 {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
-            
-            db.commit()
-            logger.info(f"💾 SUCCESSFULLY SAVED TO DATABASE")
-            logger.info(f"   - benchmark_runs table: ✅")
-            logger.info(f"   - consultations table: ✅")
-            logger.info(f"   - ecologits_metrics table: ✅ ({len(final_benchmark_results)} records)")
-            logger.info("=" * 80)
-        except Exception as e:
-            logger.error(f"❌ Failed to save run to database: {e}")
-            # Don't fail the whole run if DB save fails
+        # Save to database (use run_in_threadpool for sync DB operation)
+        await run_in_threadpool(
+            save_run_to_database, 
+            run_id, user, run, recommendation, quality_insights, analytics_data, final_benchmark_results
+        )
         
         # Mark as complete
         job_store.update_status(run_id, RunStatus.DONE)
         logger.info(f"✅ Run {run_id} completed successfully")
         
     except Exception as e:
-        logger.error(f"❌ Run {run_id} failed: {e}", exc_info=True)
-        job_store.set_error(run_id, str(e))
+        logger.error(f"❌ Failed to process run {run_id}: {e}")
+        job_store.update_status(run_id, RunStatus.ERROR)
     finally:
-        # Always close database session
-        if 'db' in locals():
-            db.close()
+        db.close()
+
+
+# Database save helper function (moved outside process_run)
+def save_run_to_database(run_id: str, user: Profile, run, recommendation, quality_insights, analytics_data, final_benchmark_results):
+    """Save benchmark run results to database"""
+    from ..db.database import SessionLocal
+    from datetime import datetime
+    db = SessionLocal()
+    
+    try:
+        logger.info("💾 SAVING RESULTS TO DATABASE")
+        logger.info("=" * 80)
+        
+        # LOG ACTUAL TEXTUAL CONTENT BEING SAVED
+        logger.info("📝 RECOMMENDATION TEXT BEING SAVED TO DB:")
+        logger.info("=" * 80)
+        if recommendation.get('recommendation_text'):
+            logger.info(recommendation['recommendation_text'])
+        else:
+            logger.info("❌ No recommendation text found")
+        logger.info("=" * 80)
+        
+        logger.info("🔍 QUALITY ANALYSIS TEXT BEING SAVED TO DB:")
+        logger.info("=" * 80)
+        if quality_insights.get('analysis_text'):
+            logger.info(quality_insights['analysis_text'])
+        else:
+            logger.info("❌ No quality analysis text found")
+        logger.info("=" * 80)
+        
+        db_run = BenchmarkRun(
+            run_id=run_id,
+            user_id=user.id,
+            project_name=run.project_name,
+            task_description=run.task_description,
+            selected_models=run.selected_models,
+            constraints=run.constraints,
+            assumptions=run.assumptions,
+            recommendation=recommendation,
+            quality_insights=quality_insights,
+            analytics_data=analytics_data,
+            benchmark_results=final_benchmark_results,
+            status="completed",
+            completed_at=datetime.utcnow()
+        )
+        db.add(db_run)
+        logger.info(f"✅ Created BenchmarkRun record")
+        
+        # Save individual EcoLogits metrics for graph generation
+        logger.info(f"📊 SAVING ECOLOGITS METRICS:")
+        for result in final_benchmark_results:
+            ecologits_metric = EcoLogitsMetrics(
+                run_id=run_id,
+                model_id=result.get('model_id', ''),
+                model_name=result.get('model_name', ''),
+                energy_wh=str(result.get('energy_wh', 0)),
+                co2_g=str(result.get('co2_g', 0)),
+                latency_ms=int(result.get('latency_ms', 0)),
+                cost_usd=str(result.get('cost_usd', 0))
+            )
+            db.add(ecologits_metric)
+            logger.info(f"   📈 {result.get('model_name', 'Unknown')}: {result.get('energy_wh', 0)} Wh, {result.get('co2_g', 0)} g CO₂")
+        
+        db.commit()
+        logger.info(f"💾 SUCCESSFULLY SAVED TO DATABASE")
+        logger.info(f"   - benchmark_runs table: ✅")
+        logger.info(f"   - ecologits_metrics table: ✅ ({len(final_benchmark_results)} records)")
+        logger.info("=" * 80)
+            
+    except Exception as e:
+        logger.error(f"❌ Failed to save run to database: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 @router.get("/{run_id}/events")
@@ -625,8 +720,7 @@ async def get_ecologits_metrics(
             "energy_wh": float(metric.energy_wh),
             "co2_g": float(metric.co2_g),
             "latency_ms": metric.latency_ms,
-            "cost_usd": float(metric.cost_usd),
-            "quality_score": float(metric.quality_score)
+            "cost_usd": float(metric.cost_usd)
         }
         metrics_data.append(metric_dict)
         logger.info(f"   📊 {metric.model_name}: {metric.energy_wh} Wh, {metric.co2_g} g CO₂")

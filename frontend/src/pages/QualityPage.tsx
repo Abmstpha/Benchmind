@@ -235,8 +235,18 @@ export const QualityPage: React.FC = () => {
               {/* Expanded Details */}
               {expandedRun === run.run_id && run.quality_insights && (
                 <div className="border-t bg-gray-50 p-6">
-                  {/* Quality Evidence Table */}
-                  {run.quality_insights.evidence && run.quality_insights.evidence.length > 0 && (
+                  {/* Quality Analysis Text */}
+                  {run.quality_insights?.analysis_text && (
+                    <div className="bg-white rounded-lg border p-6 mb-6">
+                      <h4 className="font-semibold text-gray-900 mb-4">Internet Research Analysis</h4>
+                      <div className="prose prose-sm max-w-none text-gray-700">
+                        <div className="whitespace-pre-wrap">{run.quality_insights.analysis_text}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Fallback: Legacy Evidence Table (if analysis_text not available) */}
+                  {!run.quality_insights?.analysis_text && run.quality_insights?.evidence && run.quality_insights.evidence.length > 0 && (
                     <div className="bg-white rounded-lg border p-6 mb-6">
                       <h4 className="font-semibold text-gray-900 mb-4">Quality Evidence</h4>
                       <div className="overflow-x-auto">

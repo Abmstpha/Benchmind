@@ -307,7 +307,9 @@ export const EfficiencyPage: React.FC = () => {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-sm font-medium text-gray-600">Score: {model.quality_score}</div>
+                                <div className="text-sm font-medium text-gray-600">
+                                  {model.latency_ms}ms
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -315,6 +317,16 @@ export const EfficiencyPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Agent Recommendation Text */}
+                  {run.recommendation?.recommendation_text && (
+                    <div className="bg-white rounded-lg p-4 border mb-6">
+                      <h4 className="font-semibold text-gray-900 mb-3">AI Efficiency Analysis</h4>
+                      <div className="prose prose-sm max-w-none text-gray-700">
+                        <div className="whitespace-pre-wrap">{run.recommendation.recommendation_text}</div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Implementation Notes */}
                   <div className="bg-white rounded-lg p-4 border mb-6">

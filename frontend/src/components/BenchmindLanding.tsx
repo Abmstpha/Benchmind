@@ -150,7 +150,7 @@ export const BenchmindLanding: React.FC = () => {
     };
   };
 
-  const suggestionText = "We are creating a recommendation system based on AI";
+  const suggestionText = "I need an AI model for a recommendation system that analyzes user behavior and suggests personalized content";
 
   return (
     <div className="w-full h-[calc(100vh-120px)] overflow-y-auto p-6">
@@ -177,6 +177,45 @@ export const BenchmindLanding: React.FC = () => {
               placeholder="e.g., Movie Recommendation System"
               disabled={runState.kind === 'starting'}
             />
+            
+            {/* Quick Test Examples */}
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Movie Recommendation System");
+                  setTaskDescription("I need an AI model for a personalized movie recommendation system that analyzes user viewing history, ratings, and preferences to suggest relevant films. The system should provide real-time recommendations and handle high user volumes efficiently.");
+                }}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                🎬 Movie Rec
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Customer Support Chatbot");
+                  setTaskDescription("I need an AI model for an intelligent customer support chatbot that understands user queries, provides accurate responses, and escalates complex issues to human agents. The bot should support multiple languages and maintain conversation context.");
+                }}
+                className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                💬 Support Bot
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName("Document Summarization Tool");
+                  setTaskDescription("I need an AI model for an automated document summarization system that processes long texts, research papers, and reports to extract key insights and generate concise summaries tailored for different audiences.");
+                }}
+                className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
+                disabled={runState.kind === 'starting'}
+              >
+                📄 Doc Summary
+              </button>
+            </div>
           </div>
 
           {/* Task Description */}

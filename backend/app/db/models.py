@@ -58,12 +58,11 @@ class EcoLogitsMetrics(Base):
     model_id = Column(String, nullable=False)
     model_name = Column(String, nullable=False)
     
-    # Core EcoLogits metrics for graphs
+    # Core EcoLogits metrics for graphs (environmental data only)
     energy_wh = Column(String, nullable=False)  # Energy consumption in Wh
     co2_g = Column(String, nullable=False)      # CO₂ emissions in grams
     latency_ms = Column(Integer, nullable=False)  # Latency in milliseconds
     cost_usd = Column(String, nullable=False)   # Cost in USD
-    quality_score = Column(String, nullable=False)  # Quality/performance score
     
     # Additional metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())

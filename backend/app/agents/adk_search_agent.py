@@ -122,7 +122,7 @@ For EACH model, perform multiple targeted searches:
     return search_agent
 
 
-def search_model_benchmarks(model_names: list[str]) -> str:
+async def search_model_benchmarks(model_names: list[str]) -> str:
     """
     Standalone function to search for model benchmarks independently.
     Includes caching and retry logic to handle API overload.
@@ -152,7 +152,7 @@ def search_model_benchmarks(model_names: list[str]) -> str:
     
     try:
         session_service = InMemorySessionService()
-        session = session_service.create_session_sync(user_id='benchmind', app_name='benchmind')
+        session = await session_service.create_session(user_id='benchmind', app_name='benchmind')
         runner = Runner(agent=search_agent, session_service=session_service, app_name='benchmind')
     except Exception as e:
         logger.error(f"❌ Session setup failed: {e}")

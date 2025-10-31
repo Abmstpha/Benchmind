@@ -174,8 +174,7 @@ async def get_ai_recommendation(
             consultant_logger.warning("🔍 [SEARCH AGENT] Starting...")
             try:
                 from ..agents.adk_search_agent import search_model_benchmarks
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(None, search_model_benchmarks, request.selected_models)
+                result = await search_model_benchmarks(request.selected_models)
                 consultant_logger.info(f"✅ [SEARCH AGENT] Completed: {len(result) if result else 0} chars")
                 return result if result else "No search results found"
             except Exception as e:
