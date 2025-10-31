@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
@@ -37,7 +38,7 @@ const LandingPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/auth/verify-signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: otp }),

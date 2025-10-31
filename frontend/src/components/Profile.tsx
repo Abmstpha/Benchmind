@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const Profile: React.FC = () => {
@@ -11,7 +12,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('http://localhost:8000/profile', {
+        const response = await fetch(`${API_BASE_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${user?.token}`
           }

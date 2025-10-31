@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { Link, useSearchParams } from 'react-router-dom';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
@@ -32,7 +33,7 @@ export const QualityPage: React.FC = () => {
     setDeletingRun(runId);
     try {
       const token = localStorage.getItem('benchmind_token');
-      const response = await fetch(`http://localhost:8000/api/run/history/${runId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/run/history/${runId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -60,7 +61,7 @@ export const QualityPage: React.FC = () => {
         const token = localStorage.getItem('benchmind_token');
         console.log('🔍 Quality Page - Fetching all user runs');
         
-        const response = await fetch(`http://localhost:8000/api/run/history`, {
+        const response = await fetch(`${API_BASE_URL}/api/run/history`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

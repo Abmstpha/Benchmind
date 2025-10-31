@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 import { ProgressOverlay } from './ProgressOverlay';
 import { ResultCards } from './ResultCards';
@@ -35,7 +36,7 @@ export const BenchmindLanding: React.FC = () => {
     const fetchModels = async () => {
       try {
         const token = localStorage.getItem('benchmind_token');
-        const response = await fetch('http://localhost:8000/models/', {
+        const response = await fetch(`${API_BASE_URL}/models/`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -80,7 +81,7 @@ export const BenchmindLanding: React.FC = () => {
 
     try {
       // POST /api/run
-      const response = await fetch('http://localhost:8000/api/run', {
+      const response = await fetch(`${API_BASE_URL}/api/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +120,7 @@ export const BenchmindLanding: React.FC = () => {
   };
 
   const connectSSE = (runId: string) => {
-    const eventSource = new EventSource(`http://localhost:8000/api/run/${runId}/events`);
+    const eventSource = new EventSource(`${API_BASE_URL}/api/run/${runId}/events`);
 
     eventSource.onmessage = (event) => {
       try {
