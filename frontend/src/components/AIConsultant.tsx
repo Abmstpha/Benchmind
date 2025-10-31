@@ -320,7 +320,10 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           </div>
         </div>
       )}
+      </div>
 
+      {/* Right Column - Results */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
       {/* Recommendation Display */}
       {recommendation && (
         <div className="mt-6 border-t border-gray-200 pt-6">
@@ -411,6 +414,7 @@ export const AIConsultant: React.FC<AIConsultantProps> = () => {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };
