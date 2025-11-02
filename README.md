@@ -320,3 +320,47 @@ Benchmind/
 ### **CI/CD Pipeline:**
 - **GitHub Actions** for automated testing and deployment
 - **Environment-specific configurations**
+
+## 💰 Business Model & Financial Plan
+
+### **Revenue Strategy:**
+
+Benchmind operates on a **subscription-based SaaS model** targeting both enterprise teams and individual developers who need responsible AI model selection.
+
+#### **Target Markets:**
+- **Enterprise Teams** (Primary): CTOs, Engineering Leaders, FinOps/GreenOps teams
+- **Individual Developers** (Secondary): AI researchers, consultants, indie developers
+- **Academic Institutions** (Tertiary): Universities, research labs
+
+#### **Subscription Tiers:**
+
+**🆓 Free Tier:**
+- 5 model comparisons per month
+- Basic efficiency metrics (latency, cost)
+- Community support
+
+**💼 Professional ($29/month):**
+- Unlimited model comparisons
+- Full environmental impact analysis (CO₂, energy)
+- Quality research with web search
+- Email support
+- Export capabilities
+
+**🏢 Enterprise ($199/month):**
+- Team collaboration features
+- Advanced analytics and reporting
+- Custom model integrations
+- Priority support
+- On-premise deployment options
+- Compliance reporting (ESG, carbon accounting)
+
+#### **Revenue Projections:**
+- **Year 1:** Focus on product-market fit, target 100 paying customers
+- **Year 2:** Scale to 1,000+ professional subscribers, 50+ enterprise clients
+- **Year 3:** Expand to 5,000+ users, introduce API monetization
+
+#### **Value Proposition:**
+- **Cost Savings:** Help teams avoid expensive model choices (ROI: 10-50x subscription cost)
+- **Compliance:** Meet ESG requirements and carbon reporting standards
+- **Efficiency:** Reduce model selection time from weeks to minutes
+- **Risk Mitigation:** Prevent costly production model failures
