@@ -19,6 +19,20 @@ import {
   Cell
 } from 'recharts';
 
+// Helper function to calculate the mean (average)
+const getMean = (data: number[]) => {
+  if (data.length === 0) return 0;
+  return data.reduce((a, b) => a + b) / data.length;
+};
+
+// Helper function to calculate the standard deviation
+const getStandardDeviation = (data: number[]) => {
+  if (data.length <= 1) return 0; // Std dev requires more than 1 point
+  const mean = getMean(data);
+  const variance = data.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / (data.length - 1);
+  return Math.sqrt(variance);
+};
+
 interface BenchmarkResult {
   model: string;
   model_id?: string;
@@ -65,34 +79,43 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     else colorMap[item.name] = '#F59E0B';
   });
 
-  // Calculate radar data with padded normalization (10-100 scale)
-  const minLatency = Math.min(...results.map(r => r.latency_ms || 0));
-  const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
-  const minCost = Math.min(...results.map(r => r.cost_usd || 0));
-  const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
-  const minCO2 = Math.min(...results.map(r => r.co2_g || 0));
-  const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
-  const minEnergy = Math.min(...results.map(r => r.energy_wh || 0));
-  const maxEnergy = Math.max(...results.map(r => r.energy_wh || 0));
-  
-  const radarData = results.map(result => {
-    // This function now scales from 10 (worst) to 100 (best)
-    const normalizeInverted = (value: number, min: number, max: number) => {
-      if (max === min) return 100; // All values are the same
-      
-      // Standard 0-1 inversion: (max - value) / (max - min)
-      const normalized = (max - (value || 0)) / (max - min);
-      
-      // Scale to 10-100: (normalized * 90) + 10
-      return Math.round(normalized * 90 + 10);
-    };
+  // --- Z-Score Normalization Logic ---
+
+  // 1. Create a "stats" object for each metric
+  const stats: { [key: string]: { mean: number, stddev: number } } = {};
+  const metrics = ['latency_ms', 'cost_usd', 'co2_g', 'energy_wh'];
+
+  metrics.forEach(metric => {
+    const values = results.map(r => r[metric as keyof BenchmarkResult] as number || 0);
+    const mean = getMean(values);
+    const stddev = getStandardDeviation(values);
+    stats[metric] = { mean, stddev };
+  });
+
+  // 2. Create the Z-Score Normalization Function
+  const normalizeWithZScore = (value: number, mean: number, stddev: number) => {
+    // If stddev is 0, all values are the same. Give a perfect score.
+    if (stddev === 0) return 100;
+
+    // Calculate inverted Z-Score: (mean - value) / stddev
+    const zScore = (mean - (value || 0)) / stddev;
+
+    // 3. Apply the Sigmoid Function
+    // Maps Z-score to 0-100 S-curve, k=1.5 for good steepness
+    const k = 1.5;
+    const score = 100 / (1 + Math.exp(-k * zScore));
     
+    return Math.round(score);
+  };
+
+  // 4. Map the data
+  const radarData = results.map(result => {
     return {
       model: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
-      Speed: normalizeInverted(result.latency_ms || 0, minLatency, maxLatency),
-      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, minCost, maxCost),
-      'Green Score': normalizeInverted(result.co2_g || 0, minCO2, maxCO2),
-      'Energy Efficiency': normalizeInverted(result.energy_wh || 0, minEnergy, maxEnergy)
+      Speed: normalizeWithZScore(result.latency_ms || 0, stats.latency_ms.mean, stats.latency_ms.stddev),
+      'Cost Efficiency': normalizeWithZScore(result.cost_usd || 0, stats.cost_usd.mean, stats.cost_usd.stddev),
+      'Green Score': normalizeWithZScore(result.co2_g || 0, stats.co2_g.mean, stats.co2_g.stddev),
+      'Energy Efficiency': normalizeWithZScore(result.energy_wh || 0, stats.energy_wh.mean, stats.energy_wh.stddev)
     };
   });
 
@@ -188,7 +211,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
           <RadarChart data={radarData}>
             <PolarGrid />
             <PolarAngleAxis dataKey="model" />
-            <PolarRadiusAxis domain={[10, 100]} tickCount={6} />
+            <PolarRadiusAxis domain={[0, 100]} tickCount={6} />
             <Radar
               name="Speed"
               dataKey="Speed"

@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
 import { Link, useSearchParams } from 'react-router-dom';
+
+// Helper function to calculate the mean (average)
+const getMean = (data: number[]) => {
+  if (data.length === 0) return 0;
+  return data.reduce((a, b) => a + b) / data.length;
+};
+
+// Helper function to calculate the standard deviation
+const getStandardDeviation = (data: number[]) => {
+  if (data.length <= 1) return 0; // Std dev requires more than 1 point
+  const mean = getMean(data);
+  const variance = data.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / (data.length - 1);
+  return Math.sqrt(variance);
+};
 import {
   BarChart,
   Bar,
@@ -180,35 +194,48 @@ export const AnalyticsPage: React.FC = () => {
       return "#F59E0B"; // Yellow/Orange - Middle efficiency
     };
 
-    // Calculate radar data with padded normalization (10-100 scale)
-    const getMinMax = (key: keyof typeof chartData[0]) => {
-      const values = chartData.map(d => d[key] as number);
-      return [Math.min(...values), Math.max(...values)];
-    };
-    
-    const [minLatency, maxLatency] = getMinMax('latency');
-    const [minCost, maxCost] = getMinMax('cost');
-    const [minCO2, maxCO2] = getMinMax('co2');
-    const [minEnergy, maxEnergy] = getMinMax('energy');
-    
-    const normalizedRadarData = chartData.map(item => {
-      // This function now scales from 10 (worst) to 100 (best)
-      const normalizeInverted = (value: number, min: number, max: number) => {
-        if (max === min) return 100; // All values are the same
-        
-        // Standard 0-1 inversion: (max - value) / (max - min)
-        const normalized = (max - (value || 0)) / (max - min);
-        
-        // Scale to 10-100: (normalized * 90) + 10
-        return Math.round(normalized * 90 + 10);
-      };
+    // --- Z-Score Normalization Logic ---
+
+    // 1. Create a "stats" object for each metric
+    const stats: { [key: string]: { mean: number, stddev: number } } = {};
+    const metrics: (keyof typeof chartData[0])[] = ['latency', 'cost', 'co2', 'energy'];
+
+    metrics.forEach(metric => {
+      const values = chartData.map(d => d[metric] as number);
+      const mean = getMean(values);
+      const stddev = getStandardDeviation(values);
+      stats[metric] = { mean, stddev };
+    });
+
+    // 2. Create the Z-Score Normalization Function
+    // This scales score based on distance from the average (mean)
+    const normalizeWithZScore = (value: number, mean: number, stddev: number) => {
+      // If stddev is 0, all values are the same. Give a perfect score.
+      if (stddev === 0) return 100;
+
+      // Calculate inverted Z-Score: (mean - value) / stddev
+      // A positive Z-score is good (better than average)
+      // A negative Z-score is bad (worse than average)
+      const zScore = (mean - (value || 0)) / stddev;
+
+      // 3. Apply the Sigmoid Function
+      // This maps the Z-score (e.g., -3 to +3) to a 0-100 S-curve
+      // A Z-score of 0 (average) maps to 50
+      // We use k=1.5 for a good curve steepness
+      const k = 1.5;
+      const score = 100 / (1 + Math.exp(-k * zScore));
       
+      return Math.round(score);
+    };
+
+    // 4. Map the data
+    const normalizedRadarData = chartData.map(item => {
       return {
         model: item.name,
-        Speed: normalizeInverted(item.latency, minLatency, maxLatency),
-        'Cost Efficiency': normalizeInverted(item.cost, minCost, maxCost),
-        'Green Score': normalizeInverted(item.co2, minCO2, maxCO2),
-        'Energy Efficiency': normalizeInverted(item.energy, minEnergy, maxEnergy)
+        Speed: normalizeWithZScore(item.latency, stats.latency.mean, stats.latency.stddev),
+        'Cost Efficiency': normalizeWithZScore(item.cost, stats.cost.mean, stats.cost.stddev),
+        'Green Score': normalizeWithZScore(item.co2, stats.co2.mean, stats.co2.stddev),
+        'Energy Efficiency': normalizeWithZScore(item.energy, stats.energy.mean, stats.energy.stddev)
       };
     });
 
@@ -287,7 +314,7 @@ export const AnalyticsPage: React.FC = () => {
             <RadarChart data={normalizedRadarData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="model" />
-              <PolarRadiusAxis domain={[10, 100]} tickCount={5} />
+              <PolarRadiusAxis domain={[0, 100]} tickCount={5} />
               <Radar
                 name="Speed"
                 dataKey="Speed"
