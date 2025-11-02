@@ -319,6 +319,4 @@ Benchmind/
 
 ### **CI/CD Pipeline:**
 - **GitHub Actions** for automated testing and deployment
-- **Path-based triggers** - only deploys changed components (frontend/backend)
-- **Automatic migrations** on backend deployment
 - **Environment-specific configurations**
