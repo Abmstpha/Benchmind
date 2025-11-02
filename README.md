@@ -147,6 +147,88 @@ Winner: Mistral Tiny Latest
 - ✅ **Professional UI** - Modern React + TailwindCSS design
 - ✅ **Production deployment** - Backend on Render, Frontend on Firebase
 
+## 🤖 AI Agent Architecture
+
+### **Parallel Agent Workflow:**
+
+Benchmind uses **two independent agents running in parallel** for comprehensive AI model evaluation:
+
+```mermaid
+flowchart TD
+    A[User Request] --> B[Main Consultant Agent]
+    B --> C[Benchmarking Tool]
+    B --> D[Search Sub-Agent]
+    
+    C --> E[Mistral API Calls]
+    C --> F[EcoLogits Analysis]
+    C --> G[Cost Calculation]
+    
+    D --> H[Google Search]
+    D --> I[Quality Research]
+    D --> J[Academic Papers]
+    
+    E --> K[Efficiency Results]
+    F --> K
+    G --> K
+    
+    H --> L[Quality Results]
+    I --> L
+    J --> L
+    
+    K --> M[Combined Analysis]
+    L --> M
+    M --> N[Final Recommendation]
+```
+
+### **Agent Roles:**
+
+#### **1. 🧠 Main Consultant Agent (`adk_green_agent.py`)**
+- **Role:** Primary ReAct agent using Google ADK
+- **Responsibilities:**
+  - Orchestrates the entire analysis workflow
+  - Calls benchmarking tools for efficiency metrics
+  - Integrates results from search sub-agent
+  - Generates final recommendations with reasoning
+- **Tools:** `benchmark_models_for_task`, `analyze_cost_efficiency`
+- **Model:** Gemini (temperature=0.1 for consistency)
+
+#### **2. 🔍 Search Sub-Agent (`adk_search_agent.py`)**
+- **Role:** Independent quality research specialist
+- **Responsibilities:**
+  - Searches web for model benchmarks (MMLU, HumanEval)
+  - Finds academic papers and leaderboards
+  - Analyzes real-world usage reports
+  - Caches results for performance
+- **Tools:** `google_search` (Google ADK)
+- **Model:** Gemini (dedicated instance)
+
+#### **3. ⚡ Benchmarking Tools (`tools.py`)**
+- **Role:** Direct API integration for efficiency metrics
+- **Responsibilities:**
+  - Makes real API calls to Mistral models
+  - Measures latency, cost, token usage
+  - Integrates EcoLogits for CO₂/energy data
+  - Calculates efficiency scores
+- **Integration:** EcoLogits (ISO 14044 standard)
+
+#### **4. 🌐 Quality Service (`google_search_service.py`)**
+- **Role:** Async quality analysis coordinator
+- **Responsibilities:**
+  - Manages search agent lifecycle
+  - Handles caching and database storage
+  - Processes search results into structured data
+  - Runs in parallel with benchmarking
+
+### **Execution Flow:**
+
+1. **User submits task** → Main Consultant Agent receives request
+2. **Parallel execution:**
+   - **Thread A:** Benchmarking tools → Mistral API → EcoLogits → Efficiency data
+   - **Thread B:** Search sub-agent → Google Search → Quality research
+3. **Data integration:** Main agent combines both result sets
+4. **Analysis:** ReAct reasoning over combined efficiency + quality data
+5. **Recommendation:** Final model selection with detailed justification
+
 ## 📁 Project Structure
 
 ```
@@ -154,78 +236,80 @@ Benchmind/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/
-│   │   │   ├── adk_green_agent.py      # Main ReAct agent (Google ADK)
-│   │   │   └── adk_search_agent.py     # Web search sub-agent (Google Search)
+│   │   │   ├── adk_green_agent.py      # 🧠 Main ReAct agent (Google ADK)
+│   │   │   └── adk_search_agent.py     # 🔍 Web search sub-agent (Google Search)
 │   │   ├── tools/
-│   │   │   ├── tools.py                # Benchmarking & cost analysis tools
-│   │   │   └── duckduckgo_search.py    # Web search implementation
+│   │   │   ├── tools.py                # ⚡ Benchmarking & cost analysis tools
+│   │   │   └── duckduckgo_search.py    # 🌐 alternative Web search implementation
 │   │   ├── routers/
-│   │   │   ├── auth.py                 # Authentication (signup/login/OTP)
-│   │   │   ├── user.py                 # User profile management
-│   │   │   ├── settings.py             # User settings (email/password change)
-│   │   │   ├── consultant.py           # AI consultant endpoint
-│   │   │   ├── run.py                  # Session management & history
-│   │   │   ├── models.py               # Model registry endpoint
-│   │   │   └── test_ecologits.py       # EcoLogits testing endpoint
+│   │   │   ├── auth.py                 # 🔐 Authentication (signup/login/OTP)
+│   │   │   ├── user.py                 # 👤 User profile management
+│   │   │   ├── settings.py             # ⚙️ User settings (email/password change)
+│   │   │   ├── consultant.py           # 🤖 AI consultant endpoint (main orchestrator)
+│   │   │   ├── run.py                  # 📊 Session management & history
+│   │   │   ├── models.py               # 🏷️ Model registry endpoint
+│   │   │   └── test_ecologits.py       # 🧪 EcoLogits testing endpoint
 │   │   ├── services/
-│   │   │   ├── google_search_service.py # Quality analysis via web search
-│   │   │   └── model_registry.py       # Available models database
+│   │   │   ├── google_search_service.py # 🌐 Quality analysis via web search
+│   │   │   └── model_registry.py       # 📋 Available models database
 │   │   ├── schemas/
-│   │   │   ├── auth.py                 # Authentication schemas
-│   │   │   ├── requests.py             # Pydantic request models
-│   │   │   └── responses.py            # Pydantic response models
+│   │   │   ├── auth.py                 # 🔐 Authentication schemas
+│   │   │   ├── requests.py             # 📥 Pydantic request models
+│   │   │   └── responses.py            # 📤 Pydantic response models
 │   │   ├── db/
-│   │   │   ├── database.py             # PostgreSQL connection
-│   │   │   └── models.py               # SQLAlchemy models
+│   │   │   ├── database.py             # 🗄️ PostgreSQL connection
+│   │   │   └── models.py               # 📊 SQLAlchemy models
 │   │   ├── core/
-│   │   │   ├── config.py               # Settings & environment vars
-│   │   │   ├── logging.py              # Logging configuration
-│   │   │   └── exceptions.py           # Custom exceptions
+│   │   │   ├── config.py               # ⚙️ Settings & environment vars
+│   │   │   ├── logging.py              # 📝 Logging configuration
+│   │   │   ├── exceptions.py           # ❌ Custom exceptions
+│   │   │   └── job_store.py            # 💼 Background job management
 │   │   ├── utils/
-│   │   │   ├── utils.py                # EcoLogits & cost calculations
-│   │   │   └── auth_utils.py           # JWT & OTP utilities
-│   │   └── main.py                     # FastAPI app entry point
-│   ├── alembic/                        # Database migrations
-│   ├── requirements.txt
-│   ├── init_db.py                      # Database initialization
-│   └── .env.example
+│   │   │   ├── utils.py                # 🧮 EcoLogits & cost calculations
+│   │   │   └── auth_utils.py           # 🔑 JWT & OTP utilities
+│   │   └── main.py                     # 🚀 FastAPI app entry point
+│   ├── alembic/                        # 🗄️ Database migrations (gitignored)
+│   ├── requirements.txt                # 📦 Python dependencies
+│   ├── init_db.py                      # 🗄️ Database initialization
+│   └── .env.example                    # 🔧 Environment template
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── BenchmarkCharts.tsx     # Interactive charts (Recharts)
-│   │   │   ├── BenchmindLanding.tsx    # Home page with model selection
-│   │   │   ├── LandingPage.tsx         # Login/signup page
-│   │   │   ├── ProfessionalLayout.tsx  # App layout & navigation
-│   │   │   ├── Profile.tsx             # User profile management
-│   │   │   ├── Settings.tsx            # User settings page
-│   │   │   ├── ProgressOverlay.tsx     # Benchmarking progress
-│   │   │   ├── ResultCards.tsx         # Results navigation cards
-│   │   │   └── MarkdownRenderer.tsx    # Quality analysis renderer
+│   │   │   ├── BenchmarkCharts.tsx     # 📊 Interactive charts (Recharts)
+│   │   │   ├── BenchmindLanding.tsx    # 🏠 Home page with model selection
+│   │   │   ├── LandingPage.tsx         # 🔐 Login/signup page
+│   │   │   ├── ProfessionalLayout.tsx  # 🎨 App layout & navigation
+│   │   │   ├── Profile.tsx             # 👤 User profile management
+│   │   │   ├── Settings.tsx            # ⚙️ User settings page
+│   │   │   ├── ProgressOverlay.tsx     # ⏳ Benchmarking progress
+│   │   │   ├── ResultCards.tsx         # 🎯 Results navigation cards
+│   │   │   └── MarkdownRenderer.tsx    # 📝 Quality analysis renderer
 │   │   ├── pages/
-│   │   │   ├── EfficiencyPage.tsx      # Environmental recommendations
-│   │   │   ├── QualityPage.tsx         # Web-sourced quality analysis
-│   │   │   └── AnalyticsPage.tsx       # Historical data & charts
+│   │   │   ├── EfficiencyPage.tsx      # 🌱 Environmental recommendations
+│   │   │   ├── QualityPage.tsx         # 🔍 Web-sourced quality analysis
+│   │   │   └── AnalyticsPage.tsx       # 📈 Historical data & charts
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx         # Authentication state management
+│   │   │   └── AuthContext.tsx         # 🔐 Authentication state management
 │   │   ├── api/
-│   │   │   └── benchmind.ts            # API client (Axios)
+│   │   │   └── benchmind.ts            # 🌐 API client (Axios)
 │   │   ├── config/
-│   │   │   └── api.ts                  # API configuration
-│   │   ├── App.tsx                     # Root component with routing
-│   │   └── main.tsx                    # React entry point
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   └── firebase.json                   # Firebase hosting config
-└── README.md
+│   │   │   └── api.ts                  # 🔧 API configuration
+│   │   ├── styles/
+│   │   │   └── modern.css              # 🎨 Custom styles
+│   │   ├── App.tsx                     # 🚀 Root component with routing
+│   │   └── main.tsx                    # ⚛️ React entry point
+│   ├── package.json                    # 📦 Node.js dependencies
+│   ├── vite.config.ts                  # ⚡ Vite configuration
+│   ├── tailwind.config.js              # 🎨 TailwindCSS configuration
+│   └── firebase.json                   # 🔥 Firebase hosting config
+└── README.md                           # 📖 This file
 ```
 
 ## 🚀 Live Deployment
 
 ### **Production URLs:**
-- **Frontend:** https://benchmind-app.web.app/ (Firebase Hosting)
-- **Backend API:** https://benchmind.onrender.com (Render)
-- **API Docs:** https://benchmind.onrender.com/docs
+- **live:** https://benchmind-app.web.app/ (Firebase Hosting)
+
 
 ### **Architecture:**
 - **Frontend:** React app deployed on Firebase with automatic CI/CD
@@ -239,7 +323,3 @@ Benchmind/
 - **Path-based triggers** - only deploys changed components (frontend/backend)
 - **Automatic migrations** on backend deployment
 - **Environment-specific configurations**
-
-## 🤝 Contributing
-
-Contributions welcome! Open an issue or PR.
