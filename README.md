@@ -199,7 +199,7 @@ flowchart TD
   - Finds academic papers and leaderboards
   - Analyzes real-world usage reports
   - Caches results for performance
-- **Tools:** `google_search` (Google ADK)
+- **Tools:** `google_search` (Google ADK) | Alternative: `duckduckgo_search.py`
 - **Model:** Gemini (dedicated instance)
 
 #### **3. ⚡ Benchmarking Tools (`tools.py`)**
@@ -240,7 +240,7 @@ Benchmind/
 │   │   │   └── adk_search_agent.py     # 🔍 Web search sub-agent (Google Search)
 │   │   ├── tools/
 │   │   │   ├── tools.py                # ⚡ Benchmarking & cost analysis tools
-│   │   │   └── duckduckgo_search.py    # 🌐 alternative Web search implementation
+│   │   │   └── duckduckgo_search.py    # 🌐 Alternative to Google ADK search (DuckDuckGo)
 │   │   ├── routers/
 │   │   │   ├── auth.py                 # 🔐 Authentication (signup/login/OTP)
 │   │   │   ├── user.py                 # 👤 User profile management
