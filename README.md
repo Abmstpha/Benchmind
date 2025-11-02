@@ -312,8 +312,8 @@ Benchmind/
 
 ### **Architecture:**
 - **Frontend:** React app deployed on Firebase with automatic CI/CD
-- **Backend:** FastAPI server deployed on Render with PostgreSQL database
-- **Database:** Managed PostgreSQL on Render with automatic migrations
+- **Backend:** FastAPI server with PostgreSQL database
+- **Database:** Managed PostgreSQL with automatic migrations
 - **Authentication:** JWT tokens with OTP email verification
 - **Session Management:** User-isolated data with full CRUD operations
 
