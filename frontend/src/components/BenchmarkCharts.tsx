@@ -256,11 +256,20 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
         {/* Response Length Comparison */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">📊 Response Length Comparison</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 'dataMax + 50']} />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+              />
+              <YAxis 
+                domain={[0, 'dataMax + 50']} 
+                label={{ value: 'Tokens', angle: -90, position: 'insideLeft' }}
+              />
               <Tooltip formatter={(value) => [`${value} tokens`, 'Response Length']} />
               <Bar dataKey="tokens" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, index) => (
@@ -274,11 +283,17 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
         {/* Latency Comparison */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">⚡ Latency Comparison</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+              />
+              <YAxis label={{ value: 'Latency (ms)', angle: -90, position: 'insideLeft' }} />
               <Tooltip formatter={(value) => [`${value}ms`, 'Latency']} />
               <Bar dataKey="latency" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, index) => (
@@ -292,11 +307,17 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
         {/* Cost Efficiency */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost Efficiency</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+              />
+              <YAxis label={{ value: 'Cost (micro-USD)', angle: -90, position: 'insideLeft' }} />
               <Tooltip formatter={(value) => [`$${(Number(value)/1000000).toFixed(6)}`, 'Cost per inference']} />
               <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, index) => (
@@ -310,10 +331,16 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
         {/* Environmental Impact */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">🌱 Environmental Impact</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+              />
               <YAxis />
               <Tooltip 
                 formatter={(value, name) => [

@@ -354,16 +354,22 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         {/* Performance Metrics Bar Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Latency Comparison */}
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">⚡ Latency Comparison</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis label={{ value: 'Latency (ms)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip formatter={(value) => [`${value}ms`, 'Latency']} />
                 <Bar dataKey="latency" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
@@ -377,11 +383,17 @@ export const AnalyticsPage: React.FC = () => {
           {/* Cost Efficiency */}
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">💰 Cost Efficiency</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis label={{ value: 'Cost (micro-USD)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip formatter={(value) => [`$${(Number(value)/1000000).toFixed(6)}`, 'Cost per inference']} />
                 <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
@@ -392,22 +404,50 @@ export const AnalyticsPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Environmental Impact */}
+          {/* CO₂ Emissions */}
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">🌱 Environmental Impact</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">🌍 CO₂ Emissions</h3>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'co2' ? `${value}g CO₂` : `${value}Wh`,
-                    name === 'co2' ? 'CO₂ Emissions' : 'Energy Usage'
-                  ]}
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
                 />
-                <Bar dataKey="co2" fill="#DC2626" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="energy" fill="#059669" radius={[4, 4, 0, 0]} />
+                <YAxis label={{ value: 'CO₂ (g)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip formatter={(value) => [`${value}g CO₂`, 'CO₂ Emissions']} />
+                <Bar dataKey="co2" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getModelColor(entry.name)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Energy Usage */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">⚡ Energy Usage</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis label={{ value: 'Energy (Wh)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip formatter={(value) => [`${value}Wh`, 'Energy Usage']} />
+                <Bar dataKey="energy" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getModelColor(entry.name)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
