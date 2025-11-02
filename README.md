@@ -149,35 +149,31 @@ Winner: Mistral Tiny Latest
 
 ## 🤖 AI Agent Architecture
 
-### **Parallel Agent Workflow:**
+### **Agent-Tool Workflow:**
 
-Benchmind uses **two independent agents running in parallel** for comprehensive AI model evaluation:
+Benchmind uses **one main agent with specialized tools** for comprehensive AI model evaluation:
 
 ```mermaid
 flowchart TD
     A[User Request] --> B[Main Consultant Agent]
     B --> C[Benchmarking Tool]
-    B --> D[Search Sub-Agent]
+    B --> D[Search Tool]
     
     C --> E[Mistral API Calls]
     C --> F[EcoLogits Analysis]
     C --> G[Cost Calculation]
     
-    D --> H[Google Search]
-    D --> I[Quality Research]
-    D --> J[Academic Papers]
+    D --> H[Google Search Agent]
+    H --> I[Quality Research]
+    I --> J[Academic Papers]
     
     E --> K[Efficiency Results]
     F --> K
     G --> K
+    J --> K
     
-    H --> L[Quality Results]
-    I --> L
-    J --> L
-    
-    K --> M[Combined Analysis]
-    L --> M
-    M --> N[Final Recommendation]
+    K --> L[Agent Reasoning]
+    L --> M[Final Recommendation]
 ```
 
 ### **Agent Roles:**
@@ -192,8 +188,8 @@ flowchart TD
 - **Tools:** `benchmark_models_for_task`, `analyze_cost_efficiency`
 - **Model:** Gemini (temperature=0.1 for consistency)
 
-#### **2. 🔍 Search Sub-Agent (`adk_search_agent.py`)**
-- **Role:** Independent quality research specialist
+#### **2. 🔍 Search Tool (`adk_search_agent.py`)**
+- **Role:** Agent tool for quality research (called by main agent)
 - **Responsibilities:**
   - Searches web for model benchmarks (MMLU, HumanEval)
   - Finds academic papers and leaderboards
@@ -222,11 +218,11 @@ flowchart TD
 ### **Execution Flow:**
 
 1. **User submits task** → Main Consultant Agent receives request
-2. **Parallel execution:**
-   - **Thread A:** Benchmarking tools → Mistral API → EcoLogits → Efficiency data
-   - **Thread B:** Search sub-agent → Google Search → Quality research
-3. **Data integration:** Main agent combines both result sets
-4. **Analysis:** ReAct reasoning over combined efficiency + quality data
+2. **Agent decides which tools to use** based on task requirements
+3. **Tool execution (as needed):**
+   - **Benchmarking tools:** Mistral API → EcoLogits → Efficiency data
+   - **Search tool:** Google Search Agent → Quality research → Academic papers
+4. **Agent reasoning:** ReAct agent processes all tool results
 5. **Recommendation:** Final model selection with detailed justification
 
 ## 📁 Project Structure
@@ -237,7 +233,7 @@ Benchmind/
 │   ├── app/
 │   │   ├── agents/
 │   │   │   ├── adk_green_agent.py      # 🧠 Main ReAct agent (Google ADK)
-│   │   │   └── adk_search_agent.py     # 🔍 Web search sub-agent (Google Search)
+│   │   │   └── adk_search_agent.py     # 🔍 Search tool agent (Google Search)
 │   │   ├── tools/
 │   │   │   ├── tools.py                # ⚡ Benchmarking & cost analysis tools
 │   │   │   └── duckduckgo_search.py    # 🌐 Alternative to Google ADK search (DuckDuckGo)
