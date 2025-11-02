@@ -172,7 +172,7 @@ flowchart TD
     
     J --> L[Quality Results]
     
-    K --> M[asyncio.gather()]
+    K --> M[asyncio gather]
     L --> M
     M --> N[Combined Results]
     N --> O[Final Recommendation]
