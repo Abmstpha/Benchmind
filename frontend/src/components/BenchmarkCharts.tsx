@@ -65,25 +65,25 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     else colorMap[item.name] = '#F59E0B';
   });
 
+  // Calculate radar data with proper normalization
+  const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
+  const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
+  const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
+  const maxEnergy = Math.max(...results.map(r => r.energy_wh || 0));
+  
   const radarData = results.map(result => {
-    const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
-    const minLatency = Math.min(...results.map(r => r.latency_ms || 0));
-    const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
-    const minCost = Math.min(...results.map(r => r.cost_usd || 0));
-    const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
-    const minCO2 = Math.min(...results.map(r => r.co2_g || 0));
-    
-    const normalizeInverted = (value: number, min: number, max: number) => {
-      if (max === min) return 100;
-      // Normalize to 10-100 range: lower values get higher scores
-      return Math.round(10 + (1 - (value - min) / (max - min)) * 90);
+    const normalizeInverted = (value: number, max: number) => {
+      if (max === 0) return 100; // If all values are 0, give perfect score
+      // Invert and normalize to 0-100: lower values get higher scores
+      return Math.round((1 - (value || 0) / max) * 100);
     };
     
     return {
-      model: result.model || result.model_id || 'Unknown',
-      Speed: normalizeInverted(result.latency_ms || 0, minLatency, maxLatency),
-      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, minCost, maxCost),
-      'Green Score': normalizeInverted(result.co2_g || 0, minCO2, maxCO2)
+      model: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
+      Speed: normalizeInverted(result.latency_ms || 0, maxLatency),
+      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, maxCost),
+      'Green Score': normalizeInverted(result.co2_g || 0, maxCO2),
+      'Energy Efficiency': normalizeInverted(result.energy_wh || 0, maxEnergy)
     };
   });
 
@@ -166,10 +166,11 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
           <h3 className="text-lg font-semibold text-gray-800">🕸️ Multi-Dimensional Performance</h3>
           <div className="text-xs bg-gray-50 p-3 rounded-lg border border-gray-200 max-w-xs">
             <p className="font-semibold text-gray-700 mb-2">📊 Dimension Guide:</p>
-            <div className="space-y-1">
+            <div className="text-sm space-y-1">
               <p className="text-gray-600"><span className="font-medium" style={{color: '#FF6B6B'}}>Speed:</span> Lower latency = Higher score</p>
               <p className="text-gray-600"><span className="font-medium" style={{color: '#3B82F6'}}>Cost Efficiency:</span> Lower cost = Higher score</p>
-              <p className="text-gray-600"><span className="font-medium" style={{color: '#EC4899'}}>Green Score:</span> Lower CO₂ = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#10B981'}}>Green Score:</span> Lower CO₂ = Higher score</p>
+              <p className="text-gray-600"><span className="font-medium" style={{color: '#F59E0B'}}>Energy Efficiency:</span> Lower energy = Higher score</p>
             </div>
             <p className="text-gray-500 mt-2 italic">Higher values = Better performance</p>
           </div>
@@ -198,8 +199,16 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <Radar
               name="Green Score"
               dataKey="Green Score"
-              stroke="#EC4899"
-              fill="#EC4899"
+              stroke="#10B981"
+              fill="#10B981"
+              fillOpacity={0.1}
+              strokeWidth={2}
+            />
+            <Radar
+              name="Energy Efficiency"
+              dataKey="Energy Efficiency"
+              stroke="#F59E0B"
+              fill="#F59E0B"
               fillOpacity={0.1}
               strokeWidth={2}
             />
@@ -346,9 +355,9 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
             <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
             <div className="space-y-1 text-sm">
               {results.map((result, index) => {
-                // LED bulb: ~10W, so 0.01 Wh per 0.1 minutes (6 seconds)
-                // Formula: Wh / 10W * 60 min/hr = minutes of LED bulb runtime
-                const ledMinutes = ((result.energy_wh || 0) * 6).toFixed(1); // 10W LED: Wh * 6 = minutes
+                // LED bulb: 10W = 0.01 kWh per hour = 0.0167 Wh per minute
+                // Formula: Wh / 0.0167 Wh/min = minutes of LED bulb runtime
+                const ledMinutes = ((result.energy_wh || 0) / 0.0167).toFixed(1);
                 return (
                   <div key={index} className="flex justify-between">
                     <span className="text-gray-600">{(result.model || '').replace('Mistral ', '')}:</span>

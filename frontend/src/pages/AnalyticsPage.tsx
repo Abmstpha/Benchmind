@@ -180,18 +180,27 @@ export const AnalyticsPage: React.FC = () => {
       return "#F59E0B"; // Yellow/Orange - Middle efficiency
     };
 
-    // Use the same chartData that works for bar charts and table
+    // Calculate radar data with proper normalization (consistent with BenchmarkCharts)
     const maxLatency = Math.max(...chartData.map(d => d.latency));
     const maxCost = Math.max(...chartData.map(d => d.cost));
     const maxCO2 = Math.max(...chartData.map(d => d.co2));
+    const maxEnergy = Math.max(...chartData.map(d => d.energy));
     
-    // Create radar data using the same working chartData
-    const normalizedRadarData = chartData.map(item => ({
-      model: item.name,
-      Speed: Math.round((1 - item.latency / maxLatency) * 100), // Invert latency (lower is better)
-      'Cost Efficiency': Math.round((1 - item.cost / maxCost) * 100), // Invert cost
-      'Green Score': Math.round((1 - item.co2 / maxCO2) * 100) // Invert CO2
-    }));
+    const normalizedRadarData = chartData.map(item => {
+      const normalizeInverted = (value: number, max: number) => {
+        if (max === 0) return 100; // If all values are 0, give perfect score
+        // Invert and normalize to 0-100: lower values get higher scores
+        return Math.round((1 - (value || 0) / max) * 100);
+      };
+      
+      return {
+        model: item.name,
+        Speed: normalizeInverted(item.latency, maxLatency),
+        'Cost Efficiency': normalizeInverted(item.cost, maxCost),
+        'Green Score': normalizeInverted(item.co2, maxCO2),
+        'Energy Efficiency': normalizeInverted(item.energy, maxEnergy)
+      };
+    });
 
     return (
       <div className="space-y-8">
@@ -288,8 +297,16 @@ export const AnalyticsPage: React.FC = () => {
               <Radar
                 name="Green Score"
                 dataKey="Green Score"
-                stroke="#991B1B"
-                fill="#991B1B"
+                stroke="#10B981"
+                fill="#10B981"
+                fillOpacity={0.1}
+                strokeWidth={2}
+              />
+              <Radar
+                name="Energy Efficiency"
+                dataKey="Energy Efficiency"
+                stroke="#F59E0B"
+                fill="#F59E0B"
                 fillOpacity={0.1}
                 strokeWidth={2}
               />
