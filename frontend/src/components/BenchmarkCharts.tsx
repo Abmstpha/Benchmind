@@ -65,25 +65,34 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
     else colorMap[item.name] = '#F59E0B';
   });
 
-  // Calculate radar data with proper normalization
+  // Calculate radar data with padded normalization (10-100 scale)
+  const minLatency = Math.min(...results.map(r => r.latency_ms || 0));
   const maxLatency = Math.max(...results.map(r => r.latency_ms || 0));
+  const minCost = Math.min(...results.map(r => r.cost_usd || 0));
   const maxCost = Math.max(...results.map(r => r.cost_usd || 0));
+  const minCO2 = Math.min(...results.map(r => r.co2_g || 0));
   const maxCO2 = Math.max(...results.map(r => r.co2_g || 0));
+  const minEnergy = Math.min(...results.map(r => r.energy_wh || 0));
   const maxEnergy = Math.max(...results.map(r => r.energy_wh || 0));
   
   const radarData = results.map(result => {
-    const normalizeInverted = (value: number, max: number) => {
-      if (max === 0) return 100; // If all values are 0, give perfect score
-      // Invert and normalize to 0-100: lower values get higher scores
-      return Math.round((1 - (value || 0) / max) * 100);
+    // This function now scales from 10 (worst) to 100 (best)
+    const normalizeInverted = (value: number, min: number, max: number) => {
+      if (max === min) return 100; // All values are the same
+      
+      // Standard 0-1 inversion: (max - value) / (max - min)
+      const normalized = (max - (value || 0)) / (max - min);
+      
+      // Scale to 10-100: (normalized * 90) + 10
+      return Math.round(normalized * 90 + 10);
     };
     
     return {
       model: (result.model || result.model_id || 'Unknown').replace('Mistral ', '').replace('Open ', ''),
-      Speed: normalizeInverted(result.latency_ms || 0, maxLatency),
-      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, maxCost),
-      'Green Score': normalizeInverted(result.co2_g || 0, maxCO2),
-      'Energy Efficiency': normalizeInverted(result.energy_wh || 0, maxEnergy)
+      Speed: normalizeInverted(result.latency_ms || 0, minLatency, maxLatency),
+      'Cost Efficiency': normalizeInverted(result.cost_usd || 0, minCost, maxCost),
+      'Green Score': normalizeInverted(result.co2_g || 0, minCO2, maxCO2),
+      'Energy Efficiency': normalizeInverted(result.energy_wh || 0, minEnergy, maxEnergy)
     };
   });
 
@@ -179,7 +188,7 @@ export const BenchmarkCharts: React.FC<BenchmarkChartsProps> = ({ results }) => 
           <RadarChart data={radarData}>
             <PolarGrid />
             <PolarAngleAxis dataKey="model" />
-            <PolarRadiusAxis domain={[0, 100]} tickCount={6} />
+            <PolarRadiusAxis domain={[10, 100]} tickCount={6} />
             <Radar
               name="Speed"
               dataKey="Speed"
