@@ -149,47 +149,49 @@ Winner: Mistral Tiny Latest
 
 ## 🤖 AI Agent Architecture
 
-### **Agent-Tool Workflow:**
+### **Hybrid Parallel Architecture:**
 
-Benchmind uses **one main agent with specialized tools** for comprehensive AI model evaluation:
+Benchmind uses **parallel execution of specialized components** for comprehensive AI model evaluation:
 
 ```mermaid
 flowchart TD
-    A[User Request] --> B[Main Consultant Agent]
-    B --> C[Benchmarking Tool]
-    B --> D[Search Tool]
+    A[User Request] --> B[Consultant Orchestrator]
+    B --> C[Green Agent]
+    B --> D[Search Function]
     
-    C --> E[Mistral API Calls]
-    C --> F[EcoLogits Analysis]
-    C --> G[Cost Calculation]
+    C --> E[Benchmarking Tools Only]
+    E --> F[Mistral API Calls]
+    E --> G[EcoLogits Analysis]
     
-    D --> H[Google Search Agent]
-    H --> I[Quality Research]
-    I --> J[Academic Papers]
+    D --> H[Creates Own Search Agent]
+    H --> I[Google Search]
+    I --> J[Quality Research]
     
-    E --> K[Efficiency Results]
-    F --> K
+    F --> K[Efficiency Results]
     G --> K
-    J --> K
     
-    K --> L[Agent Reasoning]
-    L --> M[Final Recommendation]
+    J --> L[Quality Results]
+    
+    K --> M[asyncio.gather()]
+    L --> M
+    M --> N[Combined Results]
+    N --> O[Final Recommendation]
 ```
 
 ### **Agent Roles:**
 
-#### **1. 🧠 Main Consultant Agent (`adk_green_agent.py`)**
-- **Role:** Primary ReAct agent using Google ADK
+#### **1. 🧠 Green Agent (`adk_green_agent.py`)**
+- **Role:** Efficiency-focused ReAct agent with benchmarking tools only
 - **Responsibilities:**
-  - Orchestrates the entire analysis workflow
-  - Calls benchmarking tools for efficiency metrics
-  - Integrates results from search sub-agent
-  - Generates final recommendations with reasoning
-- **Tools:** `benchmark_models_for_task`, `analyze_cost_efficiency`
+  - Handles efficiency and environmental analysis exclusively
+  - Uses only benchmarking and cost analysis tools
+  - No search capabilities (search_tool created but not added to tools list)
+- **Tools:** `benchmark_models_for_task`, `analyze_cost_efficiency` only
 - **Model:** Gemini (temperature=0.1 for consistency)
+- **Note:** Creates search_tool but doesn't use it (unused code)
 
-#### **2. 🔍 Search Tool (`adk_search_agent.py`)**
-- **Role:** Agent tool for quality research (called by main agent)
+#### **2. 🔍 Search Function (`search_model_benchmarks`)**
+- **Role:** Standalone function that creates its own search agent instance
 - **Responsibilities:**
   - Searches web for model benchmarks (MMLU, HumanEval)
   - Finds academic papers and leaderboards
@@ -207,23 +209,24 @@ flowchart TD
   - Calculates efficiency scores
 - **Integration:** EcoLogits (ISO 14044 standard)
 
-#### **4. 🌐 Quality Service (`google_search_service.py`)**
-- **Role:** Async quality analysis coordinator
+#### **3. 🌐 Consultant Orchestrator (`consultant.py`)**
+- **Role:** Parallel execution coordinator
 - **Responsibilities:**
-  - Manages search agent lifecycle
-  - Handles caching and database storage
-  - Processes search results into structured data
-  - Runs in parallel with benchmarking
+  - Receives user requests
+  - Launches both agents in parallel using `asyncio.gather()`
+  - Combines results from both agents
+  - Returns unified recommendation
 
 ### **Execution Flow:**
 
-1. **User submits task** → Main Consultant Agent receives request
-2. **Agent decides which tools to use** based on task requirements
-3. **Tool execution (as needed):**
-   - **Benchmarking tools:** Mistral API → EcoLogits → Efficiency data
-   - **Search tool:** Google Search Agent → Quality research → Academic papers
-4. **Agent reasoning:** ReAct agent processes all tool results
-5. **Recommendation:** Final model selection with detailed justification
+1. **User submits task** → Consultant Orchestrator receives request
+2. **Parallel execution:** `asyncio.gather()` launches both components simultaneously:
+   - **Green Agent:** Uses benchmarking tools → Mistral API → EcoLogits → Efficiency data
+   - **Search Function:** Creates own search agent → Google Search → Quality research
+3. **Result combination:** Orchestrator merges both outputs
+4. **Final response:** Unified recommendation with efficiency + quality data
+
+**Architecture Note:** The Green Agent creates a search_tool but never adds it to its tools list, indicating either legacy code or incomplete implementation. Search functionality runs independently through a separate function.
 
 ## 📁 Project Structure
 
@@ -232,8 +235,8 @@ Benchmind/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/
-│   │   │   ├── adk_green_agent.py      # 🧠 Main ReAct agent (Google ADK)
-│   │   │   └── adk_search_agent.py     # 🔍 Search tool agent (Google Search)
+│   │   │   ├── adk_green_agent.py      # 🧠 Green Agent - Benchmarking tools only
+│   │   │   └── adk_search_agent.py     # 🔍 Search functions + agent creation
 │   │   ├── tools/
 │   │   │   ├── tools.py                # ⚡ Benchmarking & cost analysis tools
 │   │   │   └── duckduckgo_search.py    # 🌐 Alternative to Google ADK search (DuckDuckGo)
@@ -241,7 +244,7 @@ Benchmind/
 │   │   │   ├── auth.py                 # 🔐 Authentication (signup/login/OTP)
 │   │   │   ├── user.py                 # 👤 User profile management
 │   │   │   ├── settings.py             # ⚙️ User settings (email/password change)
-│   │   │   ├── consultant.py           # 🤖 AI consultant endpoint (main orchestrator)
+│   │   │   ├── consultant.py           # 🤖 Parallel agent orchestrator (asyncio.gather)
 │   │   │   ├── run.py                  # 📊 Session management & history
 │   │   │   ├── models.py               # 🏷️ Model registry endpoint
 │   │   │   └── test_ecologits.py       # 🧪 EcoLogits testing endpoint
