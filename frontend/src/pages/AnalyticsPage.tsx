@@ -425,7 +425,7 @@ export const AnalyticsPage: React.FC = () => {
               <h4 className="font-medium text-gray-900 mb-2">🔋 Energy Comparison</h4>
               <div className="space-y-1 text-sm">
                 {results.map((result, index) => {
-                  const ledMinutes = ((result.energy_wh || 0) / 0.01 * 60).toFixed(1); // LED bulb equivalent
+                  const ledMinutes = ((result.energy_wh || 0) * 6).toFixed(1); // 10W LED: Wh / 10W * 60min/hr = Wh * 6
                   return (
                     <div key={index} className="flex justify-between">
                       <span className="text-gray-600">{(result.model_name || result.model || '').replace('Mistral ', '')}:</span>
